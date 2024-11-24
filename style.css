@@ -1,0 +1,10 @@
+#hexmap1 { 
+    width: 1018px; 
+    height: 960px; 
+    background-image:url("ProvidenceRing.png")
+}
+
+#hexmap1 .hex path {
+    stroke: #817B58; 
+    stroke-width: 1;
+}
