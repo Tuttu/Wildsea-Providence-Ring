@@ -1,10 +1,32 @@
 #hexmap1 { 
-    width: 1018px; 
-    height: 960px; 
+    width: 932px; 
+    height: 964px; 
     background-image:url("ProvidenceRing.png")
 }
 
 #hexmap1 .hex path {
     stroke: #817B58; 
-    stroke-width: 1;
+    stroke-width: 1;    
+}
+
+#hexmap1 .hover path { 
+    stroke-width: 4px; 
+    transform: scale(1.75); 
+    stroke: black; 
+}
+
+#hexmap1 .data-layer .chevron path { 
+    fill: url(#chevron-pattern)!important;
+}
+
+#hexmap1 .data-layer .swirl path { 
+    fill: url(#swirl-pattern)!important;
+}
+
+#hexmap1 .data-layer .providence path { 
+    fill: url(#providence-pattern)!important;
+}
+
+#hexmap1 .data-layer .mario path { 
+    fill: url(#mario-pattern)!important;
 }
