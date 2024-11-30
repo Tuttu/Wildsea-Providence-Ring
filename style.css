@@ -1,18 +1,21 @@
 #hexmap1 { 
     width: 932px; 
     height: 964px; 
-    background-image:url("ProvidenceRing.png")
+    background-image:url("ProvidenceRing.png");
+    position: relative;
 }
 
 #hexmap1 .hex path {
     stroke: #817B58; 
-    stroke-width: 1;    
+    stroke-width: 1;
+    z-index: 3;    
 }
 
 #hexmap1 .hover path { 
     stroke-width: 4px; 
     transform: scale(1.75); 
     stroke: black; 
+    z-index: 3;
 }
 
 #hexmap1 .data-layer .chevron path { 
@@ -29,4 +32,13 @@
 
 #hexmap1 .data-layer .mario path { 
     fill: url(#mario-pattern)!important;
+}
+
+#compass {
+    position: absolute; 
+    bottom: 30px; 
+    left: 30px; 
+    width: 67px; 
+    height: 71px; 
+    z-index: 2;
 }
