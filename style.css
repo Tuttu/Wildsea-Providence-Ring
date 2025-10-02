@@ -1,21 +1,53 @@
+@keyframes fadeInOutline {
+    from {
+        /* Start fully transparent */
+        opacity: 0;
+    }
+    to {
+        /* End fully opaque */
+        opacity: 1;
+    }
+}
+
 #hexmap1 { 
-    width: 932px; 
-    height: 964px; 
+    /*width: 932px; 
+    height: 964px; */
+    width: 1000px;
+    height: 932px;
     background-image:url("ProvidenceRing.png");
     position: relative;
+    z-index: 0;
 }
 
 #hexmap1 .hex path {
     stroke: #817B58; 
     stroke-width: 1;
     z-index: 3;    
+    transition: transform 0.2s ease-in-out, stroke-width 0.2s ease-in-out;
 }
 
 #hexmap1 .hover path { 
     stroke-width: 4px; 
     transform: scale(1.75); 
-    stroke: black; 
-    z-index: 3;
+    stroke: black;
+}
+
+#hexmap1 .overlay .outline path {
+    animation: fadeInOutline 0.2s ease-in-out forwards;
+    /* Apply the animation we defined
+    Match the duration of your other transition
+    Keep the same smooth timing
+    This is important: it keeps the element visible after the animation ends */    
+}
+
+.hex {
+    position: absolute;
+    /* Default z-index for normal hexes */
+    z-index: 1;
+}
+
+.hex:hover {
+    z-index: 3; /* Move hovered hex above the compass */
 }
 
 #hexmap1 .data-layer .chevron path { 
@@ -34,6 +66,10 @@
     fill: url(#mario-pattern)!important;
 }
 
+#hexmap1 .data-layer .mario2 path { 
+    fill: url(Providence.png)!important;
+}
+
 #compass {
     position: absolute; 
     bottom: 30px; 
@@ -41,4 +77,33 @@
     width: 67px; 
     height: 71px; 
     z-index: 2;
+    pointer-events: none;
+}
+
+
+
+
+/* ADD THIS TO YOUR style.css FILE */
+
+/* Make the image layer container transparent to mouse events,
+  so hovering on empty space goes through to the map.
+*/
+.html-image-layer {
+    pointer-events: none;
+}
+
+/* But make the images themselves receive mouse events initially.
+  Add a transition for a smooth fade effect.
+*/
+.html-image-layer img {
+    pointer-events: auto;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* This new class will define the 'hidden' state for an image:
+  fully transparent and no longer blocking mouse events.
+*/
+.html-image-layer img.image-hidden {
+    opacity: 0;
+    pointer-events: none;
 }
