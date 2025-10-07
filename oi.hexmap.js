@@ -1,30 +1,19 @@
 /**
-	Open Innovations hex map in SVG v0.8.3
+	Open Innovations hex map in SVG v0.8.4 (Modified)
  */
 (function(root){
 
 	var OI = root.OI || {};
 	if(!OI.ready){
 		OI.ready = function(fn){
-			// Version 1.1
 			if(document.readyState != 'loading') fn();
 			else document.addEventListener('DOMContentLoaded', fn);
 		};
 	}
 
-	// Input structure:
-	//		el: the element to attach to
-	//		attr: an object defining various parameters:
-	//			width: the width of the SVG element created
-	//			height: the height of the SVG element created
-	//			padding: an integer number of hexes to leave as padding around the displayed map
-	//			grid: do we show the background grid?
-	//			clip: do we clip the text to the hex?
-	//			formatLabel: a function to format the hex label
-	//			size: the size of a hexagon in pixels
 	function HexMap(el,attr){
 
-		this.version = "0.8.3";
+		this.version = "0.8.4";
 		if(!attr) attr	= {};
 		this._attr = attr;
 		this.title = "OI HexMap";
@@ -50,8 +39,9 @@
 		this.maxh = tall;
 		var aspectratio = wide/tall;
 		var constructed = false;
-		var svg,hexes,lines,overlay,datalayer,grid,imagelayer,htmlimagelayer;
-		var hiddenImage = null; // Modification here
+		// MODIFICATION: Renamed htmlimagelayer to labellayer and added overflowimagelayer
+		var svg,hexes,lines,overlay,datalayer,grid,imagelayer,labellayer,overflowimagelayer;
+		var hiddenImage = null;
 		var range = {};
 		var fs = parseFloat(getComputedStyle(el)['font-size'])||16;
 		var hovered = null;
@@ -60,12 +50,14 @@
 		this.properties = { 'size': attr.size };
 		this.callback = {};
 		this.mapping = {};
-		this.htmlimagelayer = []; // Modification here
+		// MODIFICATION: Added arrays for the new overflow image layer
+		this.labelImages = [];
+		this.overflowImages = [];
+		this.overflowImageMap = {}; // For quick lookup on hover
 		var _obj = this;
 
 		el.classList.add('oi-viz','oi-map','oi-map-hex');
 		
-		// Add an inner element
 		if(!el.querySelector('.hexmap-inner')){
 			var otop = document.createElement('div');
 			otop.classList.add('oi-top');
@@ -92,13 +84,11 @@
 			'formatTooltip': (typeof attr.tooltip.format==="function" ? attr.tooltip.format : function(txt,attr){ return txt; }),
 			'minFontSize': (typeof attr.minFontSize==="number" ? attr.minFontSize : 4)
 		};
-
 		this.style = {
 			'default': { 'fill': '#cccccc','fill-opacity':1,'font-size':fs,'stroke-width':1.5,'stroke-opacity':1,'stroke':'#ffffff' },
 			'highlight': { 'fill': '#1DD3A7' },
 			'grid': { 'fill': '#aaa','fill-opacity':0.1 }
 		};
-
 		for(var s in attr.style){
 			if(attr.style[s]){
 				if(!this.style[s]) this.style[s] = {};
@@ -110,10 +100,8 @@
 				if(typeof attr.style[s]['stroke-opacity']==="number") this.style[s]['stroke-opacity'] = attr.style[s]['stroke-opacity'];
 			}
 		}
-		
 		this._origin = new Hexagon(0,0,this.mapping.layout,this.mapping.originPoint);
 
-		// Can load a file or a hexjson data structure
 		this.load = function(file,prop,fn){
 			if(typeof prop==="function" && !fn){
 				fn = prop;
@@ -132,7 +120,6 @@
 					this.log('ERROR','Unable to load '+file);
 				});
 			}else if(typeof file==="object"){
-				// Add a slight delay so that we can return before the ready() function is fired
 				setTimeout(function(){ done(file,true); },100);
 			}
 			return this;
@@ -141,7 +128,6 @@
 		this.addHexes = function(data,prop,fn){
 			if(this.mapping.layout){
 				if(data.layout == this.mapping.layout){
-					// We want to add the hexagons and rebuild the map
 					for(var r in data.hexes) this.mapping.hexes[r] = data.hexes[r];
 					data = this.mapping;
 				}else this.log('warn','Layout has changed so over-writing existing hexes.');
@@ -149,30 +135,22 @@
 			this.load(data,prop,fn);				
 		};
 
-		// We'll need to change the sizes when the window changes size
 		addEvent('resize',window,{},function(event){ 
-			_obj.size(); 
-			// MODIFICATION: Update image positions on resize
-			_obj.updateHtmlImagePositions();
+			_obj.size();
+			// MODIFICATION: Update both image layers on resize
+			_obj.updateLabelImagePositions();
+			_obj.updateOverflowImagePositions();
 		});
 
-		// --- NEW GLOBAL LISTENER START ---
 		el.addEventListener('mousemove', function(e) {
-			// Check if there is a hidden image
 			if (hiddenImage) {
-				// Get the position and dimensions of the hidden image
 				const rect = hiddenImage.getBoundingClientRect();
-				
-				// Check if the mouse cursor is outside the image's original area
 				if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
-					// If it is, remove the class to make it visible again
 					hiddenImage.classList.remove('image-hidden');
-					// Forget which image was hidden so this doesn't run again until the next hover
 					hiddenImage = null;
 				}
 			}
 		});
-		// --- NEW GLOBAL LISTENER END ---
 
 		this.setHexStyle = function(r){
 			var h,style,cls,p;
@@ -212,8 +190,6 @@
 			h = this.areas[r];
 			h.selected = !h.selected;
 			this.setHexStyle(r);
-
-			// If we've deselected a region, deselect any other regions selected
 			if(!h.selected){
 				if(others){
 					for(region in this.areas){
@@ -233,15 +209,27 @@
 			this.areas[r].hover = true;
 			this.setHexStyle(r);
 			this.toFront(r);
+			// MODIFICATION: Add hover effect to overflow image
+			var img = this.overflowImageMap[r];
+			if (img) {
+				img.style.transform = 'scale(1.75)';
+				img.style.zIndex = '3'; // Bring image to front
+			}
 			return this;
 		};
 
 		this.regionBlur = function(r){
 			this.areas[r].hex.classList.remove('hover');
-			overlay.innerHTML = ""; // MODIFICATION STARTS: removes the black outline on mouse-out
+			overlay.innerHTML = "";
 			hovered = null;
 			this.areas[r].hover = false;
 			this.setHexStyle(r);
+			// MODIFICATION: Remove hover effect from overflow image
+			var img = this.overflowImageMap[r];
+			if (img) {
+				img.style.transform = 'scale(1)';
+				img.style.zIndex = ''; // Reset z-index
+			}
 			return this;
 		};
 
@@ -285,7 +273,6 @@
 			return this;
 		};
 
-		// Add events (mouseover, mouseout, click)	
 		this.on = function(type,prop,fn){
 			if(typeof prop==="function" && !fn){
 				fn = prop;
@@ -297,6 +284,7 @@
 			this.callback[type].push({ 'fn': fn, 'attr': prop });
 			return this;
 		};
+
 		this.size = function(w,h){
 			this.el.style.height = '';
 			this.el.style.width = '';
@@ -306,40 +294,32 @@
 			this.el.style.width = w+'px';
 			h = Math.min(this.maxh,this.el.offsetHeight);
 			
-			// Create SVG container
 			if(!svg){
 				svg = svgEl('svg');
 				setAttr(svg,{'class':'oi-map-map','xmlns':ns,'version':'1.1','overflow':'visible','viewBox':(attr.viewBox||'0 0 '+w+' '+h),'style':'max-width:100%;','preserveAspectRatio':'xMidYMin meet','vector-effect':'non-scaling-stroke'});
 				add(svg,this.el);
-				// Create data layer
 				datalayer = svgEl('g');
 				datalayer.classList.add('data-layer');
 				datalayer.setAttribute('role','table');
-				// Create group for hexes
 				hexes = svgEl('g');
 				hexes.classList.add('series');
 				hexes.setAttribute('role','row');
 				hexes.setAttribute('aria-label','hexagons');
 				hexes.setAttribute('tabindex','0');
-				// Create group for overlay
 				overlay = svgEl('g');
 				overlay.classList.add('overlay');
-				// MODIFICATION START: Create group for the new image layer
 				imagelayer = svgEl('g');
 				imagelayer.classList.add('image-layer');
-				// MODIFICATION END
-				// MODIFICATION START: Create the HTML image layer
-                htmlimagelayer = document.createElement('div');
-                htmlimagelayer.classList.add('html-image-layer');
-                htmlimagelayer.style.position = 'absolute';
-                htmlimagelayer.style.top = '0';
-                htmlimagelayer.style.left = '0';
-                htmlimagelayer.style.width = '100%';
-                htmlimagelayer.style.height = '100%';
-                htmlimagelayer.style.pointerEvents = 'none'; // So images don't block map interaction
-                this.el.appendChild(htmlimagelayer);
-                // MODIFICATION END
 
+				// MODIFICATION: Create the overflow image layer
+                overflowimagelayer = document.createElement('div');
+                overflowimagelayer.classList.add('overflow-image-layer');
+                this.el.appendChild(overflowimagelayer);
+
+                // MODIFICATION: Create the label layer (renamed from htmlimagelayer)
+                labellayer = document.createElement('div');
+                labellayer.classList.add('label-layer');
+                this.el.appendChild(labellayer);
 			}
 			setAttr(svg,{'style':'width:'+w+'px;max-width: 100%; max-height: 100%; margin: auto; background: none;'});
 			
@@ -361,7 +341,6 @@
 		};
 
 		this.create = function(){
-			// Clear the canvas
 			svg.innerHTML = "";
 			this.areas = {};
 			if(grid) grid.remove();
@@ -375,31 +354,20 @@
 			var p = mapping.layout.split("-");
 			this.properties.shift = p[0];
 			this.properties.orientation = p[1];
-
 			return this.initialized();
 		};
 
 		this.estimateSize = function(){
 			var s,nx,ny,dx,dy;
 			if(this.properties.orientation=="r"){
-				if(range.r.d == 0){
-					nx = range.q.d + 1;
-					ny = 1;
-				}else if(range.r.d > 0){
-					nx = range.q.d + 1.5;
-					ny = range.r.d + 1;
-				} 
+				if(range.r.d == 0){ nx = range.q.d + 1; ny = 1; }
+				else if(range.r.d > 0){ nx = range.q.d + 1.5; ny = range.r.d + 1; } 
 				dy = (1.5*ny) + 0.5;
 				dx = nx*2;
 				return Math.min((2/Math.sqrt(3))*wide/dx,tall/dy);
 			}else{
-				if(range.q.d == 0){
-					nx = 1;
-					ny = range.r.d + 1;
-				}else if(range.q.d > 0){
-					nx = range.q.d + 1;
-					ny = range.r.d + 1.5;
-				}
+				if(range.q.d == 0){ nx = 1; ny = range.r.d + 1; }
+				else if(range.q.d > 0){ nx = range.q.d + 1; ny = range.r.d + 1.5; }
 				dx = (1.5*nx) + 0.5;
 				dy = ny*2;
 				return Math.min(wide/dx,(2/Math.sqrt(3))*tall/dy);
@@ -417,7 +385,6 @@
 				if(this.mapping.hexes[r]){
 					this.areas[r]._lkey = lkey;
 					this.areas[r]._tkey = tkey;
-
 					if(this.areas[r].label){
 						l = '';
 						if(typeof lkey==="string") l = (lkey in this.mapping.hexes[r] ? this.mapping.hexes[r][lkey] : "");
@@ -464,100 +431,12 @@
 			}
 			return this;
 		};
-
-		// MODIFICATION START: function to add images to a new layer
-		// this.drawImages = function(){
-		// 	// Check if there is an imagelayer and an images attribute
-		// 	if(imagelayer && attr.images && attr.images.length > 0){
-			
-		// 		// Clear any previous images
-		// 		imagelayer.innerHTML = "";
-
-		// 		// Loop through the images defined in the settings
-		// 		for(var i = 0; i < attr.images.length; i++){
-		// 			var img = attr.images[i];
-				
-		// 			// Create an SVG <image> element
-		// 			var imageEl = svgEl('image');
-				
-		// 			// Set attributes from the configuration
-		// 			setAttr(imageEl, {
-		// 				'href': img.src, // Note: SVG uses 'href' for the image source
-		// 				'x': img.x,
-		// 				'y': img.y,
-		// 				'width': img.width,
-		// 				'height': img.height
-		// 			});
-
-		// 			// Add the new image to our image layer
-		// 			add(imageEl, imagelayer);
-		// 		}
-
-		// 		// Add the populated image layer to the main SVG
-		// 		add(imagelayer, svg);
-		// 	}
-		// 	return this;
-		// };
-		// MODIFICATION END
-
-		// MODIFICATION START: function to add images to a new layer
-		this.drawImages = function(){
-			// Check if there is an imagelayer and an images attribute
-			if(imagelayer && attr.images && attr.images.length > 0){
-			
-				// Clear any previous images
-				imagelayer.innerHTML = "";
-
-				// Loop through the images defined in the settings
-				for(var i = 0; i < attr.images.length; i++){
-					var img = attr.images[i];
-					var finalX, finalY;
-
-					// Create an SVG <image> element
-					var imageEl = svgEl('image');
-
-					// Check if the image should be positioned relative to a hexagon
-					if(img.hex && this.areas[img.hex]) {
-						var hexCenter = this.areas[img.hex].pos;
-						var dx = img.dx || 0; // delta-x from hex center
-						var dy = img.dy || 0; // delta-y from hex center
-						
-						// Calculate top-left corner (x,y) from the hex center, centering the image by default
-						finalX = hexCenter.x + dx - (img.width / 2);
-						finalY = hexCenter.y + dy - (img.height / 2);
-
-					} else {
-						// Fallback to absolute coordinates (unreliable due to viewBox scaling)
-						finalX = img.x;
-						finalY = img.y;
-						if(!img.hex) this.log('warn','Image "'+img.src+'" is using absolute coordinates (x,y) which may not scale correctly with the map. Consider using the "hex" property for reliable positioning.');
-					}
-				
-					// Set attributes from the configuration
-					setAttr(imageEl, {
-						'href': img.src,
-						'x': finalX,
-						'y': finalY,
-						'width': img.width,
-						'height': img.height
-					});
-
-					// Add the new image to our image layer
-					add(imageEl, imagelayer);
-				}
-
-				// Add the populated image layer to the main SVG
-				add(imagelayer, svg);
-			}
-			return this;
-		};
-		// MODIFICATION END
-		
-		// MODIFICATION START: This function creates the <img> tags but does not position them yet.
-		this.drawHtmlImages = function(){
-			if(htmlimagelayer && attr.images && attr.images.length > 0){
-				htmlimagelayer.innerHTML = ""; // Clear previous images
-				this.htmlImages = []; // Clear the array
+        
+		// MODIFICATION: Renamed function for clarity
+		this.drawLabelImages = function(){
+			if(labellayer && attr.images && attr.images.length > 0){
+				labellayer.innerHTML = "";
+				this.labelImages = [];
 
 				for(var i = 0; i < attr.images.length; i++){
 					var imgConfig = attr.images[i];
@@ -565,61 +444,48 @@
 					
 					imgEl.src = imgConfig.src;
 					imgEl.style.position = 'absolute';
-					imgEl.style.width = imgConfig.width + 'px';   // Set fixed pixel width
-					imgEl.style.height = imgConfig.height + 'px'; // Set fixed pixel height
+					imgEl.style.width = imgConfig.width + 'px';
+					imgEl.style.height = imgConfig.height + 'px';
 
-					// --- NEW EVENT LISTENER START ---
                     imgEl.addEventListener('mouseover', function(e) {
-                        // Only act if there isn't already a hidden image
                         if (hiddenImage === null) {
                             hiddenImage = this;
                             this.classList.add('image-hidden');
                         }
                     });
-                    // --- NEW EVENT LISTENER END ---
 					
-					// Store the element and its config for the update function
-					this.htmlImages.push({
+					this.labelImages.push({
 						el: imgEl,
 						config: imgConfig
 					});
 
-					htmlimagelayer.appendChild(imgEl);
+					labellayer.appendChild(imgEl);
 				}
 			}
 			return this;
 		};
 
-		// MODIFICATION: This new function calculates and applies pixel positions to the <img> tags.
-		this.updateHtmlImagePositions = function(){
-			if(!svg || this.htmlImages.length === 0) return;
+		// MODIFICATION: Renamed function for clarity
+		this.updateLabelImagePositions = function(){
+			if(!svg || !this.labelImages || this.labelImages.length === 0) return;
 
 			var svgBounds = svg.getBoundingClientRect();
 			var viewBox = svg.viewBox.baseVal;
-
-			// If the viewBox or SVG has no size, we can't calculate positions.
 			if(!viewBox || viewBox.width === 0 || svgBounds.width === 0) return;
 
-			// Calculate the scale factor between the viewBox and the SVG's actual pixel size
 			var scaleX = svgBounds.width / viewBox.width;
 			var scaleY = svgBounds.height / viewBox.height;
 
-			for(var i = 0; i < this.htmlImages.length; i++){
-				var img = this.htmlImages[i];
+			for(var i = 0; i < this.labelImages.length; i++){
+				var img = this.labelImages[i];
 				var hexId = img.config.hex;
 
 				if(hexId && this.areas[hexId]){
-					var hexCenter = this.areas[hexId].pos; // SVG coordinates
-
-					// Translate SVG coordinates to screen pixel coordinates relative to the SVG origin
+					var hexCenter = this.areas[hexId].pos;
 					var screenX = (hexCenter.x - viewBox.x) * scaleX;
 					var screenY = (hexCenter.y - viewBox.y) * scaleY;
-
-					// Get offsets from config
 					var dx = img.config.dx || 0;
 					var dy = img.config.dy || 0;
-
-					// Calculate final top-left position, centering the image over the hex center
 					var finalLeft = screenX - (img.config.width / 2) + dx;
 					var finalTop = screenY - (img.config.height / 2) + dy;
 
@@ -630,15 +496,74 @@
 			return this;
 		};
 
+		// --- NEW OVERFLOW IMAGE FUNCTIONS START ---
+		this.drawOverflowImages = function(){
+			if(overflowimagelayer && attr.overflowImages && attr.overflowImages.length > 0){
+				overflowimagelayer.innerHTML = "";
+				this.overflowImages = [];
+				this.overflowImageMap = {};
+
+				for(var i = 0; i < attr.overflowImages.length; i++){
+					var imgConfig = attr.overflowImages[i];
+					var imgEl = document.createElement('img');
+					
+					imgEl.src = imgConfig.src;
+					imgEl.style.position = 'absolute';
+					imgEl.style.width = imgConfig.width + 'px';
+					imgEl.style.height = imgConfig.height + 'px';
+
+					// Note: No mouseover-hide event listener is added here.
+					
+					var imageRef = {
+						el: imgEl,
+						config: imgConfig
+					};
+					this.overflowImages.push(imageRef);
+					
+					// Add to map for quick lookup by hex ID
+					if(imgConfig.hex) this.overflowImageMap[imgConfig.hex] = imgEl;
+
+					overflowimagelayer.appendChild(imgEl);
+				}
+			}
+			return this;
+		};
+
+		this.updateOverflowImagePositions = function(){
+			if(!svg || !this.overflowImages || this.overflowImages.length === 0) return;
+
+			var svgBounds = svg.getBoundingClientRect();
+			var viewBox = svg.viewBox.baseVal;
+			if(!viewBox || viewBox.width === 0 || svgBounds.width === 0) return;
+
+			var scaleX = svgBounds.width / viewBox.width;
+			var scaleY = svgBounds.height / viewBox.height;
+
+			for(var i = 0; i < this.overflowImages.length; i++){
+				var img = this.overflowImages[i];
+				var hexId = img.config.hex;
+
+				if(hexId && this.areas[hexId]){
+					var hexCenter = this.areas[hexId].pos;
+					var screenX = (hexCenter.x - viewBox.x) * scaleX;
+					var screenY = (hexCenter.y - viewBox.y) * scaleY;
+					var dx = img.config.dx || 0;
+					var dy = img.config.dy || 0;
+					var finalLeft = screenX - (img.config.width / 2) + dx;
+					var finalTop = screenY - (img.config.height / 2) + dy;
+
+					img.el.style.left = finalLeft + 'px';
+					img.el.style.top = finalTop + 'px';
+				}
+			}
+			return this;
+		};
+		// --- NEW OVERFLOW IMAGE FUNCTIONS END ---
 
 		this.draw = function(){			
-
 			var events = {
 				'mouseover': function(e){ if(e.data.region){ e.data.hexmap.regionFocus(e.data.region); } ev(e,'mouseover'); },
-				//'mouseout': function(e){ ev(e,'mouseout'); },
-				// MODIFICATION START
 				'mouseout': function(e){ if(e.data.region){ e.data.hexmap.regionBlur(e.data.region); } ev(e,'mouseout'); },
-				//'mouseout': function(e){ if(e.data.hex){ e.data.hex.classList.remove('hover'); } ev(e, 'mouseout'); },
 				'click': function(e){ if(e.data.region){ e.data.hexmap.regionFocus(e.data.region); } ev(e,'click'); }
 			};
 
@@ -650,20 +575,15 @@
 			this.id = id;
 			if(attr.patterns) defs.innerHTML += attr.patterns.join("");
 
-			// Create hexagons
 			if(this.mapping.hexes){
 				add(datalayer,svg);
 				add(hexes,datalayer);
-
 				for(r in this.mapping.hexes){
 					if(this.mapping.hexes[r]){
 						if(!constructed){
 							this.areas[r] = new Hexagon(this.mapping.hexes[r].q,this.mapping.hexes[r].r,this.mapping.layout,this.mapping.originPoint);
 							this.areas[r].set(el,this.mapping.hexes[r],this);
-
 							add(this.areas[r].hex,hexes);
-
-							// Attach events to our SVG group nodes
 							addEvent('mouseover',this.areas[r].hex,{type:'hex',hexmap:this,region:r,data:this.mapping.hexes[r]},events.mouseover);
 							addEvent('mouseout',this.areas[r].hex,{type:'hex',hexmap:this,region:r,me:this.areas[r]},events.mouseout);
 							addEvent('click',this.areas[r].hex,{type:'hex',hexmap:this,region:r,me:this.areas[r],data:this.mapping.hexes[r]},events.click);
@@ -672,7 +592,6 @@
 						setAttr(this.areas[r].path,{'stroke':this.style['default'].stroke,'stroke-opacity':this.style['default']['stroke-opacity'],'stroke-width':this.style['default']['stroke-width'],'style':'cursor: pointer;'});
 					}
 				}
-
 				if(this.options.showgrid){
 					if(!grid){
 						grid = svgEl("rect");
@@ -686,24 +605,19 @@
 				this.updateLabels();
 			}
 
-			// Create lines
 			this.drawBoundaries();
 
-			// MODIFICATION START: Call the new function to draw images
-			//this.drawImages();
-			// MODIFICATION END
-
-			// MODIFICATION START: Call the new function to create HTML images
-			this.drawHtmlImages();
-			// MODIFICATION END
-
+			// MODIFICATION: Call drawing functions for both HTML layers
+			this.drawLabelImages();
+			this.drawOverflowImages();
 			
 			if(this.mapping.hexes) add(overlay,svg);
 			
 			this.fitToRange();
 			
-			// This is the crucial line you added, which positions images on initial load.
-			this.updateHtmlImagePositions();
+			// MODIFICATION: Call position update functions for both HTML layers
+			this.updateLabelImagePositions();
+			this.updateOverflowImagePositions();
 
 			constructed = true;
 
@@ -711,11 +625,9 @@
 		};
 		
 		this.fitToRange = function(){
-
 			var dx,dy,w,h,extent,r;
 			extent = new Extent();
 			for(r in this.areas) extent.extend(this.areas[r]);
-
 			dx = extent.x.max - extent.x.min;
 			dy = extent.y.max - extent.y.min;
 			w = dx;
@@ -727,11 +639,8 @@
 				extent.y.min -= (h-dy)/2;
 				extent.y.max -= (h-dy)/2;
 			}
-
 			setAttr(svg,{'viewBox':extent.x.min.toFixed(2)+' '+extent.y.min.toFixed(2)+' '+w.toFixed(2)+' '+h.toFixed(2)});
-
 			if(grid) setAttr(grid,{'id':'grid','x':extent.x.min.toFixed(2),'y':extent.y.min.toFixed(2)});
-
 			return this;
 		};
 		
@@ -741,7 +650,6 @@
 					lines = svgEl('g');
 					lines.classList.add('lines');
 				}
-
 				lines.innerHTML = "";
 				var n,s,d,boundaries,prevedge,edge,join;
 				this.lines = {};
@@ -749,7 +657,6 @@
 				for(n in boundaries){
 					d = "";
 					prevedge = null;
-					// Do we have edges?
 					if(boundaries[n].edges){
 						for(s = 0; s < boundaries[n].edges.length; s++){
 							edge = this.getEdge(boundaries[n].edges[s]);
@@ -785,7 +692,7 @@
 		if(!layout) layout = "odd-r";
 		if(!originPoint) originPoint = "left-top";
 		var _side,_sep,_short,_hexpath,_half;
-		_side = 60;	// The length of a hexagon side
+		_side = 60;
 		_half = _side/2;
 		_sep = _side*1.5;
 		_short = parseFloat(Math.round(_side*Math.cos(Math.PI/6)).toFixed(1));
@@ -800,32 +707,25 @@
 			g.classList.add('hex');
 			if(attr.class) g.classList.add(...attr.class.split(' '));
 			setAttr(g,{'role':'cell','data-q':q,'data-r':r,'aria-label':(attr.name||attr.n)});
-
 			path = svgEl('path');
 			add(path,g);
 			setAttr(path,{'d':_hexpath,'vector-effect':'non-scaling-stroke'});
-
 			tt = svgEl('title');
 			tt.innerHTML = (attr.name||attr.n);
 			add(tt,path);
-
 			p = this.getXY();
 			this.pos = p;
 			setAttr(g,{'transform':'translate('+p.x+' '+p.y+')'});
-
 			this.hex = g;
 			this.path = path;
 			this.selected = false;
 			this.active = true;
 			this.data = attr;
 			this._extent = (layout.indexOf('-r') > 0) ? {'x':{'min':p.x-_short,'max':p.x+_short},'y':{'min':p.y-_side,'max':p.y+_side}} : {'x':{'min':p.x-_side,'max':p.x+_side},'y':{'min':p.y-_short,'max':p.y+_short}};
-
 			setAttr(path,{'stroke':hexmap.style['default'].stroke,'stroke-opacity':hexmap.style['default']['stroke-opacity'],'stroke-width':hexmap.style['default']['stroke-width'],'style':'cursor: pointer;'});
-
 			if(hexmap.options.showlabel){
 				if(hexmap.style['default']['font-size'] >= hexmap.options.minFontSize){
 					label = svgEl('text');
-					// Add to DOM
 					add(label,g);
 					setAttr(label,{'dominant-baseline':'central','data-q':attr.q,'data-r':attr.r,'class':'hex-label','text-anchor':'middle','font-size':_half+'px','title':(attr.n || r)});
 					if(hexmap.options.clip){
@@ -848,83 +748,85 @@
 					this.tooltip = tt;
 				}
 			}
-
 			return this;
 		};
-		//this.getXY = function(){
-		//	var x,y;
-		//	if(layout=="odd-r"){
-		//		x = q*_short*2 + (r&1==1 ? _short : 0);
-		//		y = r*_sep;
-		//	}else if(layout=="even-r"){
-		//		x = q*_short*2 + (r&1==1 ? -_short : 0);
-		//		y = r*_sep;
-		//	}else if(layout=="odd-q"){
-		//		x = q*_sep;
-		//		y = (r*_short*2 + (q&1==1 ? _short : 0));
-		//	}else if(layout=="even-q"){
-		//		x = q*_sep;
-		//		y = (r*_short*2 + (q&1==1 ? -_short : 0));
-		//	}
-		//	return {x:x,y:y};
-		//};
+		// --- START OF CORRECTED getXY FUNCTION ---
 		this.getXY = function(){
 			var x, y;
-			//var originPoint = hexmap.options.originPoint || "left-bottom";
-		
-			// Control based on originPoint
+			var isFlatTop = layout.indexOf('-q') > 0;
+	
+			// This switch calculates the base coordinates.
+			// The original code used the same formula for both flat-top and pointy-top layouts, which was incorrect.
+			// This version checks 'isFlatTop' and uses the correct constants (_sep vs _short*2) for x and y.
 			switch(originPoint){
 				case "left-top":
-					x = q * _short * 2;            // Left-to-right for q
-					y = r * _sep;                 // Top-to-bottom for r
+					if (isFlatTop) {
+						x = _sep * q;
+						y = _short * 2 * r;
+					} else {
+						x = _short * 2 * q;
+						y = _sep * r;
+					}
 					break;
-		
 				case "left-bottom":
-					x = q * _short * 2;            // Left-to-right for q
-					y = -r * _sep;                // Bottom-to-top for r
+					if (isFlatTop) {
+						x = _sep * q;
+						y = -(_short * 2 * r);
+					} else {
+						x = _short * 2 * q;
+						y = -(_sep * r);
+					}
 					break;
-		
 				case "right-top":
-					x = -q * _short * 2;           // Right-to-left for q
-					y = r * _sep;                 // Top-to-bottom for r
+					if (isFlatTop) {
+						x = -(_sep * q);
+						y = _short * 2 * r;
+					} else {
+						x = -(_short * 2 * q);
+						y = _sep * r;
+					}
 					break;
-		
 				case "right-bottom":
-					x = -q * _short * 2;           // Right-to-left for q
-					y = -r * _sep;                // Bottom-to-top for r
+					if (isFlatTop) {
+						x = -(_sep * q);
+						y = -(_short * 2 * r);
+					} else {
+						x = -(_short * 2 * q);
+						y = -(_sep * r);
+					}
 					break;
-		
 				default:
-					console.error("Invalid originPoint value");
-					x = q * _short * 2;            // Left-to-right for q
-					y = r * _sep;                 // Top-to-bottom for r
+					// Fallback to left-top
+					if (isFlatTop) {
+						x = _sep * q;
+						y = _short * 2 * r;
+					} else {
+						x = _short * 2 * q;
+						y = _sep * r;
+					}
 			}
-		
-			// Handle layout offsets for odd/even rows or columns
-			if (layout === "odd-r" || layout === "even-r") {
+	
+			// This part correctly applies the offset for odd/even rows/columns.
+			if (layout === "odd-r" || layout === "even-r") { // Pointy-top layouts
 				x += (r & 1 ? _short : 0) * (layout === "odd-r" ? 1 : -1);
-			} else if (layout === "odd-q" || layout === "even-q") {
+			} else if (layout === "odd-q" || layout === "even-q") { // Flat-top layouts
 				y += (q & 1 ? _short : 0) * (layout === "odd-q" ? 1 : -1);
 			}
-		
+	
 			return { x: x, y: y };
 		};
+		// --- END OF CORRECTED getXY FUNCTION ---
 		this.getEdge = function(edge){
 			var x,y,p,edges,positive,e,ed,cs,ss;
-
 			ed = Math.abs(edge);
 			positive = (edge >= 0);
-
 			if(typeof ed==="number" && ed >= 1 && ed <= 6){
-
-				// Get centre of the hexagon
 				p = this.getXY();
 				x = p.x;
 				y = p.y;
 				cs = _short;
 				ss = _half;
 				if(layout.indexOf("-r") > 0){
-					// Pointy-topped hex edges
 					edges = [
 						[x,(y-2*ss),cs,ss],
 						[(x+cs),(y-ss),0,(2*ss)],
@@ -934,7 +836,6 @@
 						[(x-cs),(y-ss),cs,-ss]
 					];
 				}else{
-					// Flat-topped hex edges
 					edges = [
 						[(x-ss),(y-cs),(2*ss),0],
 						[(x+ss),y-cs,ss,cs],
@@ -948,7 +849,6 @@
 				e[4] = e[0]+e[2];
 				e[5] = e[1]+e[3];
 				if(!positive) e = [e[4],e[5],-e[2],-e[3],e[0],e[1]];
-				// Round numbers to avoid floating point uncertainty
 				e[0] = roundTo(e[0],3);
 				e[1] = roundTo(e[1],3);
 				e[4] = roundTo(e[4],3);
@@ -992,7 +892,6 @@
 	}
 
 	function Log(opt){
-		// Console logging version 2.0
 		if(!opt) opt = {};
 		if(!opt.title) opt.title = "Log";
 		if(!opt.version) opt.version = "2.0";
@@ -1012,7 +911,6 @@
 		return this;
 	}
 
-	// Helper functions
 	var ns = 'http://www.w3.org/2000/svg';
 	function add(el,to){ return to.appendChild(el); }
 	function clone(a){ return JSON.parse(JSON.stringify(a)); }

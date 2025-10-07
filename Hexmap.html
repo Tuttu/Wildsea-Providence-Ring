@@ -6,8 +6,21 @@
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
+    <div id="legend-container">
+        <h2>Legend</h2>
+        <ul class="hexmap-legend" id="poi-legend">
+            <li data-hex-id="Providence">Providence</li>
+            <li data-hex-id="Abundance">Abundance</li>
+            <li data-hex-id="Opulence">Opulence</li>
+            <li data-hex-id="Repentance">Repentance</li>
+            <li data-hex-id="Penitence">Penitence</li>
+        </ul>
+        <h2>Regions</h2>
+        <ul class="hexmap-legend" id="region-legend">
+            <li data-region-id="Abundance">Abundance Region</li>
+        </ul>
+    </div>
     <div id="hexmap1">
-        <img id="compass" src="compass.png" />
     </div>
     <script src="oi.hexmap.js"></script>
     <script src="map.js"></script>
