@@ -20,16 +20,17 @@
 }
 
 #hexmap1 .hex path {
-    stroke: #817B58; 
-    stroke-width: 1;
-    z-index: 3;    
-    transition: transform 0.2s ease-in-out, stroke-width 0.2s ease-in-out;
+    /* stroke: #817B58;  */
+    stroke-width: 0;
+    /* z-index: 3;    
+    transition: transform 0.2s ease-in-out, stroke-width 0.2s ease-in-out; */
+    fill-opacity: 0;
 }
 
 #hexmap1 .hover path { 
-    stroke-width: 4px; 
-    transform: scale(1.75); 
-    stroke: black;
+    stroke-width: 0px; 
+    /* transform: scale(1.75);  
+    stroke: black;*/
 }
 
 #hexmap1 .overlay .outline path {
@@ -140,9 +141,6 @@
     transform: scale(1.75); 
 }
 
-/* In style.css, you can add this at the end of the file */
-
-/* --- Legend Styles --- */
 #legend-container {
     position: absolute;
     top: 20px;
@@ -152,14 +150,59 @@
     border-radius: 5px;
     padding: 10px 15px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    z-index: 10; /* Ensures the legend is on top of all map layers */
+    z-index: 10;
     font-family: sans-serif;
+    width: 200px;
 }
-#legend-container h2 {
+
+#legend-filter {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Ensures padding doesn't affect width */
+}
+
+.legend-section {
+    margin-bottom: 10px;
+}
+.legend-section:last-child {
+    margin-bottom: 0;
+}
+
+.collapsible-header {
     margin: 0 0 10px 0;
     font-size: 16px;
-    text-align: center;
+    cursor: pointer;
+    position: relative;
+    padding-right: 20px; /* Space for the arrow */
 }
+
+.collapsible-header::after {
+    content: '▲'; /* Collapsed state arrow */
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%) rotate(180deg);
+    transition: transform 0.3s ease;
+    font-size: 12px;
+}
+
+.collapsible-header.active::after {
+    transform: translateY(-50%) rotate(0deg); /* Expanded state arrow */
+}
+
+.collapsible-content {
+    max-height: 500px; /* Set a large max-height for expanded state */
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out;
+}
+
+.collapsible-header:not(.active) + .collapsible-content {
+    max-height: 0; /* Collapsed state */
+}
+
 .hexmap-legend {
     list-style: none;
     padding: 0;
@@ -172,12 +215,15 @@
     border-radius: 3px;
     transition: background-color 0.2s ease-in-out;
 }
-.hexmap-legend li:last-child {
-    margin-bottom: 0;
-}
 .hexmap-legend li:hover {
     background-color: #e0e0e0;
 }
+
+/* Class to hide filtered items/sections */
+.hidden {
+    display: none !important;
+}
+/* --- END: New Legend Styles --- */
 
 
 #hexmap1 .tooltip { 

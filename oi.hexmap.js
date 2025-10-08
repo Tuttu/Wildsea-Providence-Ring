@@ -497,33 +497,86 @@
 		};
 
 		// --- NEW OVERFLOW IMAGE FUNCTIONS START ---
+		// this.drawOverflowImages = function(){
+		// 	if(overflowimagelayer && attr.overflowImages && attr.overflowImages.length > 0){
+		// 		overflowimagelayer.innerHTML = "";
+		// 		this.overflowImages = [];
+		// 		this.overflowImageMap = {};
+
+		// 		for(var i = 0; i < attr.overflowImages.length; i++){
+		// 			var imgConfig = attr.overflowImages[i];
+		// 			var imgEl = document.createElement('img');
+					
+		// 			imgEl.src = imgConfig.src;
+		// 			imgEl.style.position = 'absolute';
+		// 			imgEl.style.width = imgConfig.width + 'px';
+		// 			imgEl.style.height = imgConfig.height + 'px';
+
+		// 			// Note: No mouseover-hide event listener is added here.
+					
+		// 			var imageRef = {
+		// 				el: imgEl,
+		// 				config: imgConfig
+		// 			};
+		// 			this.overflowImages.push(imageRef);
+					
+		// 			// Add to map for quick lookup by hex ID
+		// 			if(imgConfig.hex) this.overflowImageMap[imgConfig.hex] = imgEl;
+
+		// 			overflowimagelayer.appendChild(imgEl);
+		// 		}
+		// 	}
+		// 	return this;
+		// };
+
+		// In oi.hexmap.js, find and replace this entire function.
+
 		this.drawOverflowImages = function(){
 			if(overflowimagelayer && attr.overflowImages && attr.overflowImages.length > 0){
 				overflowimagelayer.innerHTML = "";
 				this.overflowImages = [];
 				this.overflowImageMap = {};
 
+				// Iterate over each configuration object from the 'overflowImages' array
 				for(var i = 0; i < attr.overflowImages.length; i++){
 					var imgConfig = attr.overflowImages[i];
-					var imgEl = document.createElement('img');
-					
-					imgEl.src = imgConfig.src;
-					imgEl.style.position = 'absolute';
-					imgEl.style.width = imgConfig.width + 'px';
-					imgEl.style.height = imgConfig.height + 'px';
 
-					// Note: No mouseover-hide event listener is added here.
-					
-					var imageRef = {
-						el: imgEl,
-						config: imgConfig
-					};
-					this.overflowImages.push(imageRef);
-					
-					// Add to map for quick lookup by hex ID
-					if(imgConfig.hex) this.overflowImageMap[imgConfig.hex] = imgEl;
+					// Check if the 'hex' property is a string before processing
+					if (imgConfig.hex && typeof imgConfig.hex === 'string') {
+						
+						// Split the string by comma and trim whitespace from each resulting ID
+						var hexIds = imgConfig.hex.split(',').map(function(id) { return id.trim(); });
 
-					overflowimagelayer.appendChild(imgEl);
+						// Now, iterate over the array of individual hex IDs
+						for (var j = 0; j < hexIds.length; j++) {
+							var currentHexId = hexIds[j];
+							
+							// Create a new, unique image element for each hex ID.
+							// This is crucial for independent hover animations.
+							var imgEl = document.createElement('img');
+							
+							imgEl.src = imgConfig.src;
+							imgEl.style.position = 'absolute';
+							imgEl.style.width = imgConfig.width + 'px';
+							imgEl.style.height = imgConfig.height + 'px';
+
+							// Create a new config object specifically for this instance,
+							// setting the 'hex' property to the current individual ID.
+							var individualConfig = Object.assign({}, imgConfig, { hex: currentHexId });
+
+							var imageRef = {
+								el: imgEl,
+								config: individualConfig
+							};
+							this.overflowImages.push(imageRef);
+							
+							// Add this unique image element to the map for quick lookup by its hex ID.
+							// This ensures the hover effect in regionFocus/regionBlur works correctly.
+							this.overflowImageMap[currentHexId] = imgEl;
+
+							overflowimagelayer.appendChild(imgEl);
+						}
+					}
 				}
 			}
 			return this;
@@ -710,9 +763,9 @@
 			path = svgEl('path');
 			add(path,g);
 			setAttr(path,{'d':_hexpath,'vector-effect':'non-scaling-stroke'});
-			tt = svgEl('title');
-			tt.innerHTML = (attr.name||attr.n);
-			add(tt,path);
+			// tt = svgEl('title');
+			// tt.innerHTML = (attr.name||attr.n);
+			// add(tt,path);
 			p = this.getXY();
 			this.pos = p;
 			setAttr(g,{'transform':'translate('+p.x+' '+p.y+')'});
