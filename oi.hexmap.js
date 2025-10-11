@@ -776,6 +776,7 @@
 			this.data = attr;
 			this._extent = (layout.indexOf('-r') > 0) ? {'x':{'min':p.x-_short,'max':p.x+_short},'y':{'min':p.y-_side,'max':p.y+_side}} : {'x':{'min':p.x-_side,'max':p.x+_side},'y':{'min':p.y-_short,'max':p.y+_short}};
 			setAttr(path,{'stroke':hexmap.style['default'].stroke,'stroke-opacity':hexmap.style['default']['stroke-opacity'],'stroke-width':hexmap.style['default']['stroke-width'],'style':'cursor: pointer;'});
+						
 			if(hexmap.options.showlabel){
 				if(hexmap.style['default']['font-size'] >= hexmap.options.minFontSize){
 					label = svgEl('text');
