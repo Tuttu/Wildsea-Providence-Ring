@@ -16,85 +16,7 @@ hex = new OI.hexmap(document.getElementById('hexmap1'),{
 		'<pattern id="chevron-pattern" height="100%" width="100%" patternUnits="objectBoundingBox"><image href="data:image/svg+xml,<svg id=\'chevron\' width=\'100%\' height=\'100%\' xmlns=\'http://www.w3.org/2000/svg\'><defs><pattern id=\'chevron-pattern\' patternUnits=\'userSpaceOnUse\' width=\'20\' height=\'80\' patternTransform=\'scale(2) rotate(0)\'><rect x=\'0\' y=\'0\' width=\'100%\' height=\'100%\' fill=\'hsla(240,6.7%,17.6%,1)\'/><path d=\'M-5 5L5.1 15 15 5l10 10\'  stroke-linecap=\'square\' stroke-width=\'1\' stroke=\'hsla(47,80.9%,61%,1)\' fill=\'none\'/><path d=\'M-5 25L5.1 35 15 25l10 10\'  stroke-linecap=\'square\' stroke-width=\'1\' stroke=\'hsla(4.1,89.6%,58.4%,1)\' fill=\'none\'/><path d=\'M-5 45L5.1 55 15 45l10 10\'  stroke-linecap=\'square\' stroke-width=\'1\' stroke=\'hsla(186.8,100%,41.6%,1)\' fill=\'none\'/><path d=\'M-5 65L5.1 75 15 65l10 10\'  stroke-linecap=\'square\' stroke-width=\'1\' stroke=\'hsla(258.5,59.4%,59.4%,1)\' fill=\'none\'/></pattern></defs><rect width=\'800%\' height=\'800%\' transform=\'translate(0,0)\' fill=\'url(%23chevron-pattern)\'/></svg>" x="0" y="0" width="25%" preserveAspectRatio="xMidYMid meet"></image></pattern>',
 		'<pattern id="wave-pattern" patternContentUnits="objectBoundingBox" width="1" height="1"><image href="wave.svg" preserveAspectRatio="xMidYMid meet" x="0" y="0" width="1" height="1"></image></pattern>'
 	],
-	'hexjson':{
-	"layout":"odd-q",
-	"originPoint": "left-top",
-	"hexes": {
-		"Top-Left":{"n":"0,0","q":0,"r":0},
-		"Bottom-Left":{"n":"00,31","q":0,"r":31},
-		"Leafshadow":{"n":"Leafshadow Research Center","q":9,"r":11,"region":"Rotipedes' Territory"},
-		"FieldsParasite":{"n":"09,13","q":9,"r":13,"region":"Abundance"},
-		"AbundanceAirship":{"n":"Observation Airship","q":9,"r":14},
-		"SqwikerTrail":{"n":"Sqwiker's Trail","q":9,"r":15},
-		"WreckWilly":{"n":"Willy's Ship wreck","q":9,"r":16},
-		"CalmSea2":{"n":"Calm Sea","q":9,"r":17},
-		"WreckOutrider":{"n":"Wrecked Outrider","q":9,"r":18},
-		"Sporewhip":{"n":"Sporewhip Tempest","q":9,"r":19},
-		"RotipedeHive":{"n":"Caved-in Rotidepes Hive","q":10,"r":10,"region":"Rotipedes' Territory"},
-		"Fields2":{"n":"10,12","q":10,"r":12,"region":"Abundance"},
-		"Abundance":{"n":"Abundance","q":10,"r":13,"region":"Abundance", "c":false, "e":false},
-		"Providence":{"n":"Providence","q":10,"r":20, "c":true, "e":true},
-		"CalmSea1":{"n":"Calm Sea","q":10,"r":11,"region":"Rotipedes' Territory"},
-		"RotipedeTunnels":{"n":"Opened Rotipedes tunnels","q":11,"r":11,"region":"Rotipedes' Territory"},
-		"FieldsWiskeypeach":{"n":"Overgrown Whiskeypeaches Orchard","q":11,"r":13,"region":"Abundance"},
-		"PiratesAttack":{"n":"Pirate's attack","q":12,"r":12},
-		"CalmSea3":{"n":"Calm Sea","q":12,"r":13},
-		"WreckhubaBaa":{"n":"Huba Baa's crashed ship","q":12,"r":14},
-		"DarkMistCenter":{"n":"Dark Mist","q":16,"r":17},
-		"Opulence":{"n":"Opulence","q":18,"r":11},
-		"Repentance":{"n":"Repentance","q":22,"r":20},
-		"Penitence":{"n":"Penitence","q":24,"r":14},
-		"Bottom-Right":{"n":"35,31","q":35,"r":31}
-	},
-	"boundaries": {
-		"Abundance": {
-			"type": "region",
-			"edges": [
-				{"q":10,"r":12,"e":1},
-				{"q":10,"r":12,"e":2},
-				{"q":10,"r":12,"e":6},
-				{"q":11,"r":12,"e":1},
-				{"q":11,"r":12,"e":2},
-				{"q":11,"r":12,"e":3},
-				{"q":11,"r":13,"e":2},
-				{"q":11,"r":13,"e":3},
-				{"q":11,"r":13,"e":4},
-				{"q":10,"r":14,"e":3},
-				{"q":10,"r":14,"e":4},
-				{"q":10,"r":14,"e":5},
-				{"q":9,"r":13,"e":4},
-				{"q":9,"r":13,"e":5},
-				{"q":9,"r":13,"e":6},
-				{"q":9,"r":12,"e":5},
-				{"q":9,"r":12,"e":6},
-				{"q":9,"r":12,"e":1}
-			]
-		},
-		"Rotipedes' Territory": {
-			"type": "region",
-			"edges": [
-				{"q":9,"r":11,"e":1},				
-				{"q":9,"r":11,"e":3},				
-				{"q":9,"r":11,"e":4},				
-				{"q":9,"r":11,"e":5},
-				{"q":9,"r":11,"e":6},				
-				{"q":10,"r":10,"e":1},
-				{"q":10,"r":10,"e":2},
-				{"q":10,"r":10,"e":3},
-				{"q":10,"r":10,"e":5},
-				{"q":10,"r":10,"e":6},				
-				{"q":10,"r":11,"e":2},				
-				{"q":10,"r":11,"e":4},				
-				{"q":10,"r":11,"e":6},				
-				{"q":11,"r":11,"e":1},				
-				{"q":11,"r":11,"e":2},				
-				{"q":11,"r":11,"e":3},				
-				{"q":11,"r":11,"e":4},				
-				{"q":11,"r":11,"e":5}						
-			]
-		}
-	}
-	},
+	'hexjson':'./providence.hexjson',
 // NEW: This array is for images that should grow with the hex.
 'overflowImages': [
 	{
@@ -171,7 +93,7 @@ hex = new OI.hexmap(document.getElementById('hexmap1'),{
 	}
 ],
 // NEW SETTING to add images to the top layer
-'images': [
+'labelImages': [
 {
 	'src': 'Label-Providence.png',
 	'hex': 'Providence',

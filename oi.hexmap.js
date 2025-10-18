@@ -434,12 +434,12 @@
         
 		// MODIFICATION: Renamed function for clarity
 		this.drawLabelImages = function(){
-			if(labellayer && attr.images && attr.images.length > 0){
+			if(labellayer && attr.labelImages && attr.labelImages.length > 0){
 				labellayer.innerHTML = "";
 				this.labelImages = [];
 
-				for(var i = 0; i < attr.images.length; i++){
-					var imgConfig = attr.images[i];
+				for(var i = 0; i < attr.labelImages.length; i++){
+					var imgConfig = attr.labelImages[i];
 					var imgEl = document.createElement('img');
 					
 					imgEl.src = imgConfig.src;
