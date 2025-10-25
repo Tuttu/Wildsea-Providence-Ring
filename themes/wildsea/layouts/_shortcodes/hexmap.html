@@ -1,0 +1,81 @@
+{{/* Get parameters */}}
+{{ $hexjsonFilename := .Get "hexjson" | default "" }}
+{{ $overflowFilename := .Get "overflowImages" | default "" }}
+{{ $labelFilename := .Get "labelImages" | default "" }}
+{{ $showLegend := .Get "legend" | default "false" }}
+{{ $legendPos := .Get "legendPos" | default "left" }}
+
+{{/* Generate a unique ID for this map instance */}}
+{{ $mapID := printf "hexmap-%d" .Ordinal }}
+
+{{/* --- Resource Path & Data Logic --- */}}
+{{ $hexjsonPath := "" }}
+{{ $hexjsonData := "" }}
+{{ $overflowImgPath := "" }}
+{{ $labelImgPath := "" }}
+
+{{/* --- 1. Get HexJSON Path & Data --- */}}
+{{ $hexjsonResource := .Page.Resources.GetMatch $hexjsonFilename }}
+{{ if $hexjsonResource }}
+    {{ $hexjsonPath = $hexjsonResource.RelPermalink }}
+    {{ with $hexjsonResource.Content }}
+        {{ $hexjsonData = . | unmarshal }}
+    {{ else }}
+        {{ warnf "Hexmap Shortcode: Found resource '%s' but it's empty." $hexjsonFilename }}
+    {{ end }}
+{{ else }}
+    {{ $hexjsonPath = $hexjsonFilename | relURL }}
+{{ end }}
+
+{{/* --- 2. Get Overflow Images Path --- */}}
+{{ with .Page.Resources.GetMatch $overflowFilename }}
+    {{ $overflowImgPath = .RelPermalink }}
+{{ else }}
+    {{ $overflowImgPath = $overflowFilename | relURL }}
+{{ end }}
+
+{{/* --- 3. Get Label Images Path --- */}}
+{{ with .Page.Resources.GetMatch $labelFilename }}
+    {{ $labelImgPath = .RelPermalink }}
+{{ else }}
+    {{ $labelImgPath = $labelFilename | relURL }}
+{{ end }}
+
+
+{{/* --- Render the Wrapper --- */}}
+{{/* MODIFIED: The unique ID is now on the wrapper */}}
+<div id="{{ $mapID }}" class="hexmap-wrapper legend-pos-{{ $legendPos }}" 
+     data-map-id="{{ $mapID }}"
+     data-hexjson-path="{{ $hexjsonPath }}"
+     data-overflow-images-path="{{ $overflowImgPath }}"
+     data-label-images-path="{{ $labelImgPath }}"
+     data-show-legend="{{ $showLegend }}">
+
+    {{/* --- Conditionally render the legend --- */}}
+    {{ if eq $showLegend "true" }}
+        {{ if $hexjsonData }}
+            {{ partial "hexmap-legend.html" (dict "data" $hexjsonData "mapID" $mapID) }}
+        {{ else }}
+            <div class="legend-container">
+                <p class="track-error"><strong>Legend Error:</strong><br>
+                Could not auto-generate legend.<br>
+                The 'hexjson' file must be in the same folder as the post (as a Page Resource).</p>
+            </div>
+        {{ end }}
+    {{ end }}
+
+    {{/* MODIFIED: The unique ID has been removed from here */}}
+    <div class="hexmap-container">
+        </div>
+
+    {{/* --- This block now works correctly --- */}}
+    {{ if .Inner }}
+        {{/* Replace '&' with the wrapper's ID selector */}}
+        {{ $scopedCSS := replace .Inner "&" (printf "#%s" $mapID) }}
+        <style>
+        /* Specific styles for map {{ $mapID }} */
+        {{ $scopedCSS | safeCSS }}
+        </style>
+    {{ end }}
+
+</div>
