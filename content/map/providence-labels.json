@@ -1,6 +1,6 @@
 [
     {
-        "src": "Label-Providence.png",
+        "src": "pictures/Label-Providence.png",
         "hex": "Providence",
         "dx": 0,
         "dy": 30,
@@ -8,7 +8,7 @@
         "height": 26
     },
     {
-        "src": "Label-Abundance.png",
+        "src": "pictures/Label-Abundance.png",
         "hex": "Abundance",
         "dx": 0,
         "dy": 30,
@@ -16,7 +16,7 @@
         "height": 26
     },
     {
-        "src": "Label-Opulence.png",
+        "src": "pictures/Label-Opulence.png",
         "hex": "Opulence",
         "dx": 0,
         "dy": 30,
@@ -24,7 +24,7 @@
         "height": 26
     },
     {
-        "src": "Label-Repentance.png",
+        "src": "pictures/Label-Repentance.png",
         "hex": "Repentance",
         "dx": 0,
         "dy": 30,
@@ -32,7 +32,7 @@
         "height": 26
     },
     {
-        "src": "Label-Penitence.png",
+        "src": "pictures/Label-Penitence.png",
         "hex": "Penitence",
         "dx": 0,
         "dy": 30,
@@ -40,7 +40,7 @@
         "height": 26
     },
     {
-        "src": "Compass.png",
+        "src": "pictures/Compass.png",
         "hex": "Bottom-Left",
         "dx": 50,
         "dy": -50,
@@ -48,7 +48,7 @@
         "height": 71
     },
     {
-        "src": "Label-DarkMist.png",
+        "src": "pictures/Label-DarkMist.png",
         "hex": "DarkMistCenter",
         "dx": 0,
         "dy": 0,

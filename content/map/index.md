@@ -11,7 +11,7 @@ draft = false
     legend="true"
 >}}
     & .hexmap-container {
-        background-image: url('Dark-Mist.png');
+        background-image: url('pictures/Dark-Mist.png');
         background-repeat: no-repeat;
         background-position: 319px 377px;
     }
