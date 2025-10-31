@@ -148,6 +148,13 @@
 			"region": "Dark Mist (Outer)",
 			"e": true
 		},
+		"WreckSailShip": {
+			"n": "Ruined sail-powered ship",
+			"q": 13,
+			"r": 12,
+			"region": "Secluded Driftwood Cove",
+			"e": true
+		},
 		"DarkMistCenter": {
 			"n": "Dark Mist",
 			"q": 16,
