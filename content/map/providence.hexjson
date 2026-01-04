@@ -155,6 +155,11 @@
 			"anchor": true,
 			"class": "hex-anchor"
 		},
+		"SmugglersHideout": {
+			"n": "Smugglers' Hideout",
+			"q": 17,
+			"r": 11
+		},
 		"Opulence": {
 			"n": "Opulence",
 			"q": 18,

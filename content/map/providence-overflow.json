@@ -70,5 +70,11 @@
 		"hex": "PiratesAttack",
 		"width": 30,
 		"height": 24
+	},
+	{
+		"src": "pictures/Rock-Outcrop.svg",
+		"hex": "SmugglersHideout",
+		"width": 26,
+		"height": 26
 	}
 ]
