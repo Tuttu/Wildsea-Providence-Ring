@@ -3,7 +3,7 @@
 	"originPoint": "left-top",
 	"hexes": {
 		"Top-Left":{"n":"0,0","q":0,"r":0},
-		"Bottom-Left":{"n":"00,31","q":0,"r":31},
+		"Bottom-Left":{"n":"00,31","q":0,"r":31, "c":true, "e":true},
 		"Leafshadow":{"n":"Leafshadow Research Center","q":9,"r":11,"region":"Rotipedes' Territory"},
 		"FieldsParasite":{"n":"09,13","q":9,"r":13,"region":"Abundance"},
 		"AbundanceAirship":{"n":"Observation Airship","q":9,"r":14},
