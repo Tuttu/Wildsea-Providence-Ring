@@ -1,0 +1,4 @@
+baseURL = 'https://tuttu.github.io/Wildsea-Providence-Ring/'
+languageCode = 'en-us'
+title = 'Wildsea - Sailing the Providence Ring'
+theme = 'wildsea'

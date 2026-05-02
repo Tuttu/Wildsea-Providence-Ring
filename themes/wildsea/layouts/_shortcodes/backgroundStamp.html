@@ -1,0 +1,17 @@
+{{ $stamp := .Get "stamp" }}
+{{ .Store.Set "class" "" }}
+
+{{ if eq $stamp "arconautics" }}
+    {{ $.Store.Set "class" "arconautics" }}
+{{ else if eq $stamp "spiritual" }}
+    {{ $.Store.Set "class" "spiritual" }}
+{{ else if eq $stamp "technology" }}
+    {{ $.Store.Set "class" "technology" }}
+{{ else }}
+    {{ $.Store.Set "class" "" }}
+{{ end }}    
+
+<div class=" stamp {{ $.Store.Get "class" }}">    
+    <img src="{{ printf "img/stamp-%s.png" ($.Store.Get "class") | absURL }}" class="rotated-stamp">
+    {{ .Inner | $.Page.RenderString }}
+</div>

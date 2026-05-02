@@ -1,0 +1,58 @@
+[
+    {
+        "src": "pictures/Label-Providence.png",
+        "hex": "Providence",
+        "dx": 0,
+        "dy": 30,
+        "width": 103,
+        "height": 26
+    },
+    {
+        "src": "pictures/Label-Abundance.png",
+        "hex": "Abundance",
+        "dx": 0,
+        "dy": 30,
+        "width": 103,
+        "height": 26
+    },
+    {
+        "src": "pictures/Label-Opulence.png",
+        "hex": "Opulence",
+        "dx": 0,
+        "dy": 30,
+        "width": 103,
+        "height": 26
+    },
+    {
+        "src": "pictures/Label-Repentance.png",
+        "hex": "Repentance",
+        "dx": 0,
+        "dy": 30,
+        "width": 103,
+        "height": 26
+    },
+    {
+        "src": "pictures/Label-Penitence.png",
+        "hex": "Penitence",
+        "dx": 0,
+        "dy": 30,
+        "width": 103,
+        "height": 26
+    },
+    {
+        "src": "pictures/Compass.png",
+        "hex": "Bottom-Left",
+        "dx": 50,
+        "dy": -50,
+        "width": 67,
+        "height": 71
+    },
+    {
+        "src": "pictures/Label-DarkMist.png",
+        "hex": "DarkMistCenter",
+        "dx": 0,
+        "dy": 0,
+        "width": 95,
+        "height": 26
+    }
+]
