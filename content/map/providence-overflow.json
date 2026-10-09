@@ -22,59 +22,5 @@
 		"hex": "Opulence",
 		"width": 69,
 		"height": 44
-	},
-	{
-		"src": "pictures/Fields.svg",
-		"hex": "FieldsParasite, Fields2, FieldsWiskeypeach",
-		"width": 30,
-		"height": 25
-	},
-	{
-		"src": "pictures/Wreck.svg",
-		"hex": "WreckWilly, WreckOutrider, WreckhubaBaa, WreckSailShip",
-		"width": 31,
-		"height": 25
-	},
-	{
-		"src": "pictures/Airship.svg",
-		"hex": "AbundanceAirship",
-		"width": 24,
-		"height": 19
-	},
-	{
-		"src": "pictures/Trail.svg",
-		"hex": "SquikerTrail, RotipedeTunnels",
-		"width": 26,
-		"height": 22
-	},
-	{
-		"src": "pictures/CalmSea.svg",
-		"hex": "CalmSea1, CalmSea2, CalmSea3",
-		"width": 30,
-		"height": 24
-	},
-	{
-		"src": "pictures/Hole.svg",
-		"hex": "Leafshadow, RotipedeHive",
-		"width": 30,
-		"height": 25
-	},
-	{
-		"src": "pictures/Sporewhip.svg",
-		"hex": "Sporewhip",
-		"width": 32,
-		"height": 27
-	},
-	{
-		"src": "pictures/Skull.svg",
-		"hex": "PiratesAttack",
-		"width": 30,
-		"height": 24
-	},
-	{
-		"src": "pictures/Rock-Outcrop.svg",
-		"hex": "SmugglersHideout",
-		"width": 26,
-		"height": 26
 	}
 ]
