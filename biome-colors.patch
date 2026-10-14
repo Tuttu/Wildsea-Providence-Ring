@@ -1,0 +1,73 @@
+diff --git a/themes/wildsea/assets/css/map.css b/themes/wildsea/assets/css/map.css
+index f5e5aa0..65d9f84 100644
+--- a/themes/wildsea/assets/css/map.css
++++ b/themes/wildsea/assets/css/map.css
+@@ -307,7 +307,8 @@
+ }
+ 
+ .hexmap-container .lines path[data-type="biome"] {
+-    stroke: var(--boundary-biome-color);
++    /* A biome can set its own colour with "color" in the hexjson (exposed as --boundary-color) */
++    stroke: var(--boundary-color, var(--boundary-biome-color));
+     stroke-width: var(--boundary-biome-width);
+     stroke-dasharray: var(--boundary-biome-dash);
+ }
+@@ -335,7 +336,8 @@
+ 
+ /* Biomes are highlighted with their own colour (must come after the rule above) */
+ .hexmap-container .lines path[data-type="biome"].boundary-highlight {
+-    stroke: var(--boundary-biome-highlight-color, #2B7DE9);
++    /* A biome with its own colour keeps it when highlighted (only the width changes) */
++    stroke: var(--boundary-color, var(--boundary-biome-highlight-color, #2B7DE9));
+ }
+ 
+ /* --- Biomes in the legend --- */
+@@ -371,7 +373,7 @@
+     width: 18px;
+     margin-right: 8px;
+     vertical-align: middle;
+-    border-top: 3px dashed var(--boundary-biome-color, #2E8B57);
++    border-top: 3px dashed var(--boundary-color, var(--boundary-biome-color, #2E8B57));
+ }
+ 
+ /* --- START: New Stylable Hex State Icon Styles --- */
+diff --git a/themes/wildsea/assets/js/oi.hexmap.js b/themes/wildsea/assets/js/oi.hexmap.js
+index 86168d8..00faf6c 100644
+--- a/themes/wildsea/assets/js/oi.hexmap.js
++++ b/themes/wildsea/assets/js/oi.hexmap.js
+@@ -716,6 +716,8 @@
+ 					if(d){
+ 						this.lines[n] = svgEl('path');
+ 						setAttr(this.lines[n],{'d':d,'data-name':n,'data-type':(boundaries[n].type||'region'),'vector-effect':'non-scaling-stroke'});
++						// Optional custom colour (hex code) for this boundary, used by the CSS as --boundary-color
++						if(typeof boundaries[n].color === "string" && /^#[0-9a-f]{3,8}$/i.test(boundaries[n].color)) this.lines[n].style.setProperty('--boundary-color',boundaries[n].color);
+ 						add(this.lines[n],lines);
+ 					}
+ 				}
+diff --git a/themes/wildsea/layouts/_partials/hexmap-legend.html b/themes/wildsea/layouts/_partials/hexmap-legend.html
+index 00d0308..21bf6f0 100644
+--- a/themes/wildsea/layouts/_partials/hexmap-legend.html
++++ b/themes/wildsea/layouts/_partials/hexmap-legend.html
+@@ -25,7 +25,12 @@
+ {{ $biomes := slice }}
+ {{ range $name, $boundary := $.data.boundaries }}
+     {{ if eq ($boundary.type | default "region") "biome" }}
+-        {{ $biomes = $biomes | append $name }}
++        {{/* Optional "color" must be a hex code such as #2E8B57 or #2e8; anything else is ignored */}}
++        {{ $color := "" }}
++        {{ with $boundary.color }}
++            {{ if findRE `^#[0-9a-fA-F]{3,8}$` (string .) }}{{ $color = string . }}{{ end }}
++        {{ end }}
++        {{ $biomes = $biomes | append (dict "name" $name "color" $color) }}
+     {{ end }}
+ {{ end }}
+ 
+@@ -120,7 +125,7 @@
+         <div class="legend-biome-group">
+             <h3 class="legend-group-title">Biomes</h3>
+             {{ range $biomes }}
+-                <div class="legend-biome" data-biome-id="{{ . }}">{{ . }}</div>
++                <div class="legend-biome" data-biome-id="{{ .name }}"{{ if .color }} style="--boundary-color: {{ .color | safeCSS }}"{{ end }}>{{ .name }}</div>
+             {{ end }}
+         </div>
+     {{ end }}

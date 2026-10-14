@@ -1,0 +1,84 @@
+diff --git a/themes/wildsea/assets/css/map.css b/themes/wildsea/assets/css/map.css
+index bfced01..2f691b5 100644
+--- a/themes/wildsea/assets/css/map.css
++++ b/themes/wildsea/assets/css/map.css
+@@ -286,6 +286,29 @@
+     fill: none;
+ }
+ 
++/* Boundary types (set by "type" in the hexjson boundaries).
++   Regions are drawn first, biomes on top. On an edge shared by both, the dashed
++   biome line lets the region line show through the gaps.
++   Tweak the colours / widths / dash pattern here. */
++.hexmap-container {
++    --boundary-region-color: #333;
++    --boundary-region-width: 1px;
++    --boundary-biome-color: #2E8B57;
++    --boundary-biome-width: 1px;
++    --boundary-biome-dash: 8, 6;
++}
++
++.hexmap-container .lines path[data-type="region"] {
++    stroke: var(--boundary-region-color);
++    stroke-width: var(--boundary-region-width);
++}
++
++.hexmap-container .lines path[data-type="biome"] {
++    stroke: var(--boundary-biome-color);
++    stroke-width: var(--boundary-biome-width);
++    stroke-dasharray: var(--boundary-biome-dash);
++}
++
+ /* Use the "ends with" selector to set default styles.
+   This makes "Abundance_Dashed" dashed.
+ */
+diff --git a/themes/wildsea/assets/js/hexmap-loader.js b/themes/wildsea/assets/js/hexmap-loader.js
+index 5b21f58..25535a5 100644
+--- a/themes/wildsea/assets/js/hexmap-loader.js
++++ b/themes/wildsea/assets/js/hexmap-loader.js
+@@ -168,7 +168,7 @@ async function initializeHexmap(config) {
+                     const mapContainer = hexmap.el; 
+                     
+                     // Find ALL path segments that START WITH this region's name
+-                    const boundaryPaths = mapContainer.querySelectorAll(`.lines path[data-name^="${regionId}"]`);
++                    const boundaryPaths = mapContainer.querySelectorAll(`.lines path[data-type="region"][data-name^="${regionId}"]`);
+ 
+                     if (regionId && boundaryPaths.length > 0) {
+                         // Add mouseover event to the legend header
+diff --git a/themes/wildsea/assets/js/oi.hexmap.js b/themes/wildsea/assets/js/oi.hexmap.js
+index d15d7e3..86168d8 100644
+--- a/themes/wildsea/assets/js/oi.hexmap.js
++++ b/themes/wildsea/assets/js/oi.hexmap.js
+@@ -678,6 +678,12 @@
+ 			return out;
+ 		}
+ 
++		// Boundaries are drawn in layers: regions first, then any other type (e.g. "biome") on top,
++		// so that when two boundaries share an edge, both stay visible.
++		function boundaryRank(b){
++			return (!b || !b.type || b.type === "region") ? 0 : 1;
++		}
++
+ 		this.drawBoundaries = function(){
+ 			if(this.mapping.boundaries){
+ 				if(!lines){
+@@ -688,7 +694,9 @@
+ 				var n,s,d,boundaries,prevedge,edge,join;
+ 				this.lines = {};
+ 				boundaries = this.mapping.boundaries;
+-				for(n in boundaries){
++				var names = Object.keys(boundaries).sort(function(a,b){ return boundaryRank(boundaries[a]) - boundaryRank(boundaries[b]); });
++				for(var ni = 0; ni < names.length; ni++){
++					n = names[ni];
+ 					d = "";
+ 					prevedge = null;
+ 					if(boundaries[n].edges){
+@@ -707,7 +715,7 @@
+ 					}
+ 					if(d){
+ 						this.lines[n] = svgEl('path');
+-						setAttr(this.lines[n],{'d':d,'data-name':n,'vector-effect':'non-scaling-stroke'});
++						setAttr(this.lines[n],{'d':d,'data-name':n,'data-type':(boundaries[n].type||'region'),'vector-effect':'non-scaling-stroke'});
+ 						add(this.lines[n],lines);
+ 					}
+ 				}

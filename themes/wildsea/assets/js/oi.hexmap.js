@@ -663,6 +663,27 @@
 			return this;
 		};
 		
+		// Expand boundary edges into one {q,r,e} per side. "e" can be a number (one side),
+		// a comma-separated string like "1,2,6" or an array like [1,2,6]. Negative numbers
+		// still reverse the drawing direction of that side.
+		function expandEdges(edges){
+			var out = [],i,j,list,e;
+			for(i = 0; i < edges.length; i++){
+				e = edges[i].e;
+				list = (typeof e === "string") ? e.split(",") : (Array.isArray(e) ? e : [e]);
+				for(j = 0; j < list.length; j++){
+					if(String(list[j]).trim() !== "") out.push({q:edges[i].q,r:edges[i].r,e:parseInt(list[j],10)});
+				}
+			}
+			return out;
+		}
+
+		// Boundaries are drawn in layers: regions first, then any other type (e.g. "biome") on top,
+		// so that when two boundaries share an edge, both stay visible.
+		function boundaryRank(b){
+			return (!b || !b.type || b.type === "region") ? 0 : 1;
+		}
+
 		this.drawBoundaries = function(){
 			if(this.mapping.boundaries){
 				if(!lines){
@@ -673,12 +694,15 @@
 				var n,s,d,boundaries,prevedge,edge,join;
 				this.lines = {};
 				boundaries = this.mapping.boundaries;
-				for(n in boundaries){
+				var names = Object.keys(boundaries).sort(function(a,b){ return boundaryRank(boundaries[a]) - boundaryRank(boundaries[b]); });
+				for(var ni = 0; ni < names.length; ni++){
+					n = names[ni];
 					d = "";
 					prevedge = null;
 					if(boundaries[n].edges){
-						for(s = 0; s < boundaries[n].edges.length; s++){
-							edge = this.getEdge(boundaries[n].edges[s]);
+						var sides = expandEdges(boundaries[n].edges);
+						for(s = 0; s < sides.length; s++){
+							edge = this.getEdge(sides[s]);
 							if(edge){
 								join = (prevedge && (edge[0]==prevedge[4] && edge[1]==prevedge[5])) ? '' : 'M';
 								if(join) d += join+edge[0]+' '+edge[1];
@@ -691,7 +715,9 @@
 					}
 					if(d){
 						this.lines[n] = svgEl('path');
-						setAttr(this.lines[n],{'d':d,'data-name':n,'vector-effect':'non-scaling-stroke'});
+						setAttr(this.lines[n],{'d':d,'data-name':n,'data-type':(boundaries[n].type||'region'),'vector-effect':'non-scaling-stroke'});
+						// Optional custom colour (hex code) for this boundary, used by the CSS as --boundary-color
+						if(typeof boundaries[n].color === "string" && /^#[0-9a-f]{3,8}$/i.test(boundaries[n].color)) this.lines[n].style.setProperty('--boundary-color',boundaries[n].color);
 						add(this.lines[n],lines);
 					}
 				}

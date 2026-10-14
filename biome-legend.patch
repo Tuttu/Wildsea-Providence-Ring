@@ -1,0 +1,183 @@
+diff --git a/themes/wildsea/assets/css/map.css b/themes/wildsea/assets/css/map.css
+index d6deb14..f5e5aa0 100644
+--- a/themes/wildsea/assets/css/map.css
++++ b/themes/wildsea/assets/css/map.css
+@@ -290,12 +290,15 @@
+    Regions are drawn first, biomes on top. On an edge shared by both, the dashed
+    biome line lets the region line show through the gaps.
+    Tweak the colours / widths / dash pattern here. */
++.hexmap-wrapper,
+ .hexmap-container {
+     --boundary-region-color: #333;
+     --boundary-region-width: 1px;
+     --boundary-biome-color: #2E8B57;
+     --boundary-biome-width: 1px;
+     --boundary-biome-dash: 8, 6;
++    --boundary-region-highlight-color: #D9534F; /* red */
++    --boundary-biome-highlight-color: #2B7DE9;  /* blue */
+ }
+ 
+ .hexmap-container .lines path[data-type="region"] {
+@@ -324,12 +327,53 @@
+ /* --- Boundary Highlight Style --- */
+ /* This class will be added via JavaScript on hover */
+ .hexmap-container .lines path[data-type].boundary-highlight {
+-    stroke: #D9534F; /* A distinct red color */
++    stroke: var(--boundary-region-highlight-color, #D9534F); /* A distinct red color */
+     stroke-width: 4px;
+     transition: stroke 0.2s ease-in-out, stroke-width 0.2s ease-in-out;
+     z-index: 5;
+ }
+ 
++/* Biomes are highlighted with their own colour (must come after the rule above) */
++.hexmap-container .lines path[data-type="biome"].boundary-highlight {
++    stroke: var(--boundary-biome-highlight-color, #2B7DE9);
++}
++
++/* --- Biomes in the legend --- */
++.legend-biome-group {
++    margin-top: 10px;
++    padding-top: 10px;
++    border-top: 1px solid #817B58;
++}
++.legend-group-title {
++    margin: 0 0 8px 0;
++    font-size: 12px;
++    font-weight: normal;
++    text-transform: uppercase;
++    letter-spacing: 0.05em;
++    color: #666;
++}
++.legend-biome {
++    margin: 0 0 6px 0;
++    padding: 4px 6px;
++    font-size: 16px;
++    font-weight: bold;
++    cursor: pointer;
++    border-radius: 3px;
++    transition: background-color 0.2s ease-in-out;
++}
++.legend-biome:hover {
++    background-color: #e0e0e0;
++}
++/* Small dashed swatch in the biome boundary colour */
++.legend-biome::before {
++    content: "";
++    display: inline-block;
++    width: 18px;
++    margin-right: 8px;
++    vertical-align: middle;
++    border-top: 3px dashed var(--boundary-biome-color, #2E8B57);
++}
++
+ /* --- START: New Stylable Hex State Icon Styles --- */
+ .icon-non-explored, .icon-non-cartographized {
+     filter: grayscale(100%);
+diff --git a/themes/wildsea/assets/js/hexmap-loader.js b/themes/wildsea/assets/js/hexmap-loader.js
+index 25535a5..d18f8ec 100644
+--- a/themes/wildsea/assets/js/hexmap-loader.js
++++ b/themes/wildsea/assets/js/hexmap-loader.js
+@@ -146,6 +146,19 @@ async function initializeHexmap(config) {
+                             header.classList.remove('active');
+                         }
+                     });
++
++                    // Biomes only have a name: show/hide them according to the search term
++                    let visibleBiomes = 0;
++                    legendEl.querySelectorAll('.legend-biome').forEach(biome => {
++                        if (biome.textContent.toLowerCase().includes(searchTerm)) {
++                            biome.classList.remove('hidden');
++                            visibleBiomes++;
++                        } else {
++                            biome.classList.add('hidden');
++                        }
++                    });
++                    const biomeGroup = legendEl.querySelector('.legend-biome-group');
++                    if (biomeGroup) biomeGroup.classList.toggle('hidden', !!searchTerm && visibleBiomes === 0);
+                 });
+ 
+                 // --- Legend Hover (POI) ---
+@@ -158,6 +171,12 @@ async function initializeHexmap(config) {
+                     }
+                 });
+ 
++                // Boundaries are layered: regions first, then other types (biomes) on top.
++                // Highlighting moves a path to the front, so put the layers back in order afterwards.
++                const restoreBoundaryOrder = () => {
++                    hexmap.el.querySelectorAll('.lines path:not([data-type="region"])').forEach(p => p.parentNode.appendChild(p));
++                };
++
+                 // --- Legend Hover (Region) ---
+                 // Find all collapsible headers that have a region ID
+                 const regionLegendHeaders = legendEl.querySelectorAll('.collapsible-header[data-region-id]'); 
+@@ -190,9 +209,36 @@ async function initializeHexmap(config) {
+                             boundaryPaths.forEach(path => {
+                                 path.classList.remove('boundary-highlight');
+                             });
++                            restoreBoundaryOrder();
+                         });
+                     }
+                 });
++
++                // --- Legend Hover (Biome) ---
++                legendEl.querySelectorAll('.legend-biome[data-biome-id]').forEach(item => {
++                    const biomeId = item.getAttribute('data-biome-id');
++
++                    // Paths are looked up on hover so they are always the current ones.
++                    // A biome "Forest" also matches variants such as "Forest_Dashed".
++                    const getBiomePaths = () => Array.from(hexmap.el.querySelectorAll('.lines path[data-type="biome"]')).filter(path => {
++                        const name = path.getAttribute('data-name') || '';
++                        return name === biomeId || name.indexOf(biomeId + '_') === 0;
++                    });
++
++                    item.addEventListener('mouseover', () => {
++                        document.querySelectorAll(".map-label").forEach(x => x.classList.add("image-hidden"));
++                        getBiomePaths().forEach(path => {
++                            path.parentNode.appendChild(path); // Bring to front
++                            path.classList.add('boundary-highlight');
++                        });
++                    });
++
++                    item.addEventListener('mouseout', () => {
++                        document.querySelectorAll(".map-label").forEach(x => x.classList.remove("image-hidden"));
++                        getBiomePaths().forEach(path => path.classList.remove('boundary-highlight'));
++                        restoreBoundaryOrder();
++                    });
++                });
+             }
+         } // end ready function
+     }; // end mapConfig
+diff --git a/themes/wildsea/layouts/_partials/hexmap-legend.html b/themes/wildsea/layouts/_partials/hexmap-legend.html
+index 1610606..00d0308 100644
+--- a/themes/wildsea/layouts/_partials/hexmap-legend.html
++++ b/themes/wildsea/layouts/_partials/hexmap-legend.html
+@@ -21,6 +21,14 @@
+ {{ end }}
+ 
+ 
++{{/* --- 2b. Find all biomes (boundaries of type "biome") --- */}}
++{{ $biomes := slice }}
++{{ range $name, $boundary := $.data.boundaries }}
++    {{ if eq ($boundary.type | default "region") "biome" }}
++        {{ $biomes = $biomes | append $name }}
++    {{ end }}
++{{ end }}
++
+ {{/* --- 3. Build the Legend HTML --- */}}
+ <div class="legend-container">
+     <input type="text" class="legend-filter" placeholder="Filter locations...">
+@@ -107,4 +115,13 @@
+             </div>
+         </div>
+     {{ end }}
++    {{/* --- 6. Biomes: name only (no expandable content), highlighted on hover --- */}}
++    {{ if gt (len $biomes) 0 }}
++        <div class="legend-biome-group">
++            <h3 class="legend-group-title">Biomes</h3>
++            {{ range $biomes }}
++                <div class="legend-biome" data-biome-id="{{ . }}">{{ . }}</div>
++            {{ end }}
++        </div>
++    {{ end }}
+ </div>
+\ No newline at end of file

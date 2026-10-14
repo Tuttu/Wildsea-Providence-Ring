@@ -286,6 +286,33 @@
     fill: none;
 }
 
+/* Boundary types (set by "type" in the hexjson boundaries).
+   Regions are drawn first, biomes on top. On an edge shared by both, the dashed
+   biome line lets the region line show through the gaps.
+   Tweak the colours / widths / dash pattern here. */
+.hexmap-wrapper,
+.hexmap-container {
+    --boundary-region-color: #333;
+    --boundary-region-width: 1px;
+    --boundary-biome-color: #2E8B57;
+    --boundary-biome-width: 1px;
+    --boundary-biome-dash: 8, 6;
+    --boundary-region-highlight-color: #D9534F; /* red */
+    --boundary-biome-highlight-color: #2B7DE9;  /* blue */
+}
+
+.hexmap-container .lines path[data-type="region"] {
+    stroke: var(--boundary-region-color);
+    stroke-width: var(--boundary-region-width);
+}
+
+.hexmap-container .lines path[data-type="biome"] {
+    /* A biome can set its own colour with "color" in the hexjson (exposed as --boundary-color) */
+    stroke: var(--boundary-color, var(--boundary-biome-color));
+    stroke-width: var(--boundary-biome-width);
+    stroke-dasharray: var(--boundary-biome-dash);
+}
+
 /* Use the "ends with" selector to set default styles.
   This makes "Abundance_Dashed" dashed.
 */
@@ -300,11 +327,53 @@
 
 /* --- Boundary Highlight Style --- */
 /* This class will be added via JavaScript on hover */
-.lines path.boundary-highlight {
-    stroke: #D9534F; /* A distinct red color */
+.hexmap-container .lines path[data-type].boundary-highlight {
+    stroke: var(--boundary-region-highlight-color, #D9534F); /* A distinct red color */
     stroke-width: 4px;
     transition: stroke 0.2s ease-in-out, stroke-width 0.2s ease-in-out;
     z-index: 5;
+}
+
+/* Biomes are highlighted with their own colour (must come after the rule above) */
+.hexmap-container .lines path[data-type="biome"].boundary-highlight {
+    /* A biome with its own colour keeps it when highlighted (only the width changes) */
+    stroke: var(--boundary-color, var(--boundary-biome-highlight-color, #2B7DE9));
+}
+
+/* --- Biomes in the legend --- */
+.legend-biome-group {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #817B58;
+}
+.legend-group-title {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    font-weight: normal;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #666;
+}
+.legend-biome {
+    margin: 0 0 6px 0;
+    padding: 4px 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background-color 0.2s ease-in-out;
+}
+.legend-biome:hover {
+    background-color: #e0e0e0;
+}
+/* Small dashed swatch in the biome boundary colour */
+.legend-biome::before {
+    content: "";
+    display: inline-block;
+    width: 18px;
+    margin-right: 8px;
+    vertical-align: middle;
+    border-top: 3px dashed var(--boundary-color, var(--boundary-biome-color, #2E8B57));
 }
 
 /* --- START: New Stylable Hex State Icon Styles --- */

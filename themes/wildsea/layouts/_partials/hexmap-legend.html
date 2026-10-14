@@ -21,6 +21,19 @@
 {{ end }}
 
 
+{{/* --- 2b. Find all biomes (boundaries of type "biome") --- */}}
+{{ $biomes := slice }}
+{{ range $name, $boundary := $.data.boundaries }}
+    {{ if eq ($boundary.type | default "region") "biome" }}
+        {{/* Optional "color" must be a hex code such as #2E8B57 or #2e8; anything else is ignored */}}
+        {{ $color := "" }}
+        {{ with $boundary.color }}
+            {{ if findRE `^#[0-9a-fA-F]{3,8}$` (string .) }}{{ $color = string . }}{{ end }}
+        {{ end }}
+        {{ $biomes = $biomes | append (dict "name" $name "color" $color) }}
+    {{ end }}
+{{ end }}
+
 {{/* --- 3. Build the Legend HTML --- */}}
 <div class="legend-container">
     <input type="text" class="legend-filter" placeholder="Filter locations...">
@@ -105,6 +118,15 @@
                     {{ end }}
                 </ul>
             </div>
+        </div>
+    {{ end }}
+    {{/* --- 6. Biomes: name only (no expandable content), highlighted on hover --- */}}
+    {{ if gt (len $biomes) 0 }}
+        <div class="legend-biome-group">
+            <h3 class="legend-group-title">Biomes</h3>
+            {{ range $biomes }}
+                <div class="legend-biome" data-biome-id="{{ .name }}"{{ if .color }} style="--boundary-color: {{ .color | safeCSS }}"{{ end }}>{{ .name }}</div>
+            {{ end }}
         </div>
     {{ end }}
 </div>
