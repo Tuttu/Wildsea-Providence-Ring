@@ -24,6 +24,13 @@
 			"r": 13,
 			"region": "Abundance",
 			"c": true,
+			"e": false
+		},
+		"WreckProvidenceNorth": {
+			"n": "Ship wreck",
+			"q": 10,
+			"r": 19,
+			"c": true,
 			"e": true
 		},
 		"Providence": {
@@ -48,7 +55,7 @@
 			"r": 11,
 			"region": "Opulence",
 			"c": true,
-			"e": true
+			"e": false
 		},
 		"Repentance": {
 			"n": "Repentance",

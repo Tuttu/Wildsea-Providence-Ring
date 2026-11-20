@@ -22,5 +22,11 @@
 		"hex": "Opulence",
 		"width": 69,
 		"height": 44
+	},
+	{
+		"src": "pictures/Wreck.svg",
+		"hex": "WreckProvidenceNorth",
+		"width": 31,
+		"height": 25
 	}
 ]
