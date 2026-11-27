@@ -147,18 +147,20 @@ async function initializeHexmap(config) {
                         }
                     });
 
-                    // Biomes only have a name: show/hide them according to the search term
-                    let visibleBiomes = 0;
-                    legendEl.querySelectorAll('.legend-biome').forEach(biome => {
-                        if (biome.textContent.toLowerCase().includes(searchTerm)) {
-                            biome.classList.remove('hidden');
-                            visibleBiomes++;
-                        } else {
-                            biome.classList.add('hidden');
-                        }
+                    // Biomes and rumors only have a name: show/hide them according to the search term
+                    [['.legend-biome', '.legend-biome-group'], ['.legend-rumor', '.legend-rumor-group']].forEach(([itemSel, groupSel]) => {
+                        let visibleNames = 0;
+                        legendEl.querySelectorAll(itemSel).forEach(entry => {
+                            if (entry.textContent.toLowerCase().includes(searchTerm)) {
+                                entry.classList.remove('hidden');
+                                visibleNames++;
+                            } else {
+                                entry.classList.add('hidden');
+                            }
+                        });
+                        const group = legendEl.querySelector(groupSel);
+                        if (group) group.classList.toggle('hidden', !!searchTerm && visibleNames === 0);
                     });
-                    const biomeGroup = legendEl.querySelector('.legend-biome-group');
-                    if (biomeGroup) biomeGroup.classList.toggle('hidden', !!searchTerm && visibleBiomes === 0);
                 });
 
                 // --- Legend Hover (POI) ---
@@ -171,10 +173,16 @@ async function initializeHexmap(config) {
                     }
                 });
 
-                // Boundaries are layered: regions first, then other types (biomes) on top.
+                // Boundaries are layered: regions first, then biomes, then rumors on top.
                 // Highlighting moves a path to the front, so put the layers back in order afterwards.
+                const layerRank = { region: 0, biome: 1 };   // any other type (e.g. rumor) is drawn last
+                // Remember the order in which the paths were drawn so it can be restored exactly
+                const drawOrder = new Map(Array.from(hexmap.el.querySelectorAll('.lines path')).map((path, i) => [path, i]));
                 const restoreBoundaryOrder = () => {
-                    hexmap.el.querySelectorAll('.lines path:not([data-type="region"])').forEach(p => p.parentNode.appendChild(p));
+                    Array.from(hexmap.el.querySelectorAll('.lines path'))
+                        .map(path => ({ path, i: drawOrder.get(path) ?? 0, rank: layerRank[path.getAttribute('data-type')] ?? 2 }))
+                        .sort((a, b) => (a.rank - b.rank) || (a.i - b.i))
+                        .forEach(o => o.path.parentNode.appendChild(o.path));
                 };
 
                 // --- Legend Hover (Region) ---
@@ -214,31 +222,35 @@ async function initializeHexmap(config) {
                     }
                 });
 
-                // --- Legend Hover (Biome) ---
-                legendEl.querySelectorAll('.legend-biome[data-biome-id]').forEach(item => {
-                    const biomeId = item.getAttribute('data-biome-id');
+                // --- Legend Hover (name-only layers: Biomes and Rumors) ---
+                const setupLayerHover = (itemSelector, idAttr, type) => {
+                    legendEl.querySelectorAll(itemSelector).forEach(item => {
+                        const layerId = item.getAttribute(idAttr);
 
-                    // Paths are looked up on hover so they are always the current ones.
-                    // A biome "Forest" also matches variants such as "Forest_Dashed".
-                    const getBiomePaths = () => Array.from(hexmap.el.querySelectorAll('.lines path[data-type="biome"]')).filter(path => {
-                        const name = path.getAttribute('data-name') || '';
-                        return name === biomeId || name.indexOf(biomeId + '_') === 0;
-                    });
+                        // Paths are looked up on hover so they are always the current ones.
+                        // A boundary "Forest" also matches variants such as "Forest_Dashed".
+                        const getPaths = () => Array.from(hexmap.el.querySelectorAll(`.lines path[data-type="${type}"]`)).filter(path => {
+                            const name = path.getAttribute('data-name') || '';
+                            return name === layerId || name.indexOf(layerId + '_') === 0;
+                        });
 
-                    item.addEventListener('mouseover', () => {
-                        document.querySelectorAll(".map-label").forEach(x => x.classList.add("image-hidden"));
-                        getBiomePaths().forEach(path => {
-                            path.parentNode.appendChild(path); // Bring to front
-                            path.classList.add('boundary-highlight');
+                        item.addEventListener('mouseover', () => {
+                            document.querySelectorAll(".map-label").forEach(x => x.classList.add("image-hidden"));
+                            getPaths().forEach(path => {
+                                path.parentNode.appendChild(path); // Bring to front
+                                path.classList.add('boundary-highlight');
+                            });
+                        });
+
+                        item.addEventListener('mouseout', () => {
+                            document.querySelectorAll(".map-label").forEach(x => x.classList.remove("image-hidden"));
+                            getPaths().forEach(path => path.classList.remove('boundary-highlight'));
+                            restoreBoundaryOrder();
                         });
                     });
-
-                    item.addEventListener('mouseout', () => {
-                        document.querySelectorAll(".map-label").forEach(x => x.classList.remove("image-hidden"));
-                        getBiomePaths().forEach(path => path.classList.remove('boundary-highlight'));
-                        restoreBoundaryOrder();
-                    });
-                });
+                };
+                setupLayerHover('.legend-biome[data-biome-id]', 'data-biome-id', 'biome');
+                setupLayerHover('.legend-rumor[data-rumor-id]', 'data-rumor-id', 'rumor');
             }
         } // end ready function
     }; // end mapConfig

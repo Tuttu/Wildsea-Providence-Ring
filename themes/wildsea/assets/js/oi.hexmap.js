@@ -678,10 +678,11 @@
 			return out;
 		}
 
-		// Boundaries are drawn in layers: regions first, then any other type (e.g. "biome") on top,
+		// Boundaries are drawn in layers: regions first, then biomes, then rumors on top,
 		// so that when two boundaries share an edge, both stay visible.
 		function boundaryRank(b){
-			return (!b || !b.type || b.type === "region") ? 0 : 1;
+			if(!b || !b.type || b.type === "region") return 0;
+			return (b.type === "biome") ? 1 : 2;
 		}
 
 		this.drawBoundaries = function(){

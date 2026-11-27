@@ -286,19 +286,24 @@
     fill: none;
 }
 
-/* Boundary types (set by "type" in the hexjson boundaries).
-   Regions are drawn first, biomes on top. On an edge shared by both, the dashed
-   biome line lets the region line show through the gaps.
-   Tweak the colours / widths / dash pattern here. */
+/* Boundary types (set by "type" in the hexjson boundaries: "region", "biome" or "rumor").
+   Regions are drawn first, then biomes, then rumors on top. On an edge shared by several
+   layers, the dashed / dotted lines let the ones below show through the gaps.
+   Tweak the colours / widths / dash patterns here. */
 .hexmap-wrapper,
 .hexmap-container {
     --boundary-region-color: #333;
     --boundary-region-width: 1px;
     --boundary-biome-color: #2E8B57;
-    --boundary-biome-width: 1px;
+    --boundary-biome-width: 2px;
     --boundary-biome-dash: 8, 6;
     --boundary-region-highlight-color: #D9534F; /* red */
     --boundary-biome-highlight-color: #2B7DE9;  /* blue */
+    /* Rumors: white dotted line (round dots: dash length ~0, spacing = second value) */
+    --boundary-rumor-color: #FFFFFF;
+    --boundary-rumor-width: 2px;
+    --boundary-rumor-dash: 0.1, 7;
+    --boundary-rumor-highlight-color: #FFD93D;  /* yellow */
 }
 
 .hexmap-container .lines path[data-type="region"] {
@@ -311,6 +316,13 @@
     stroke: var(--boundary-color, var(--boundary-biome-color));
     stroke-width: var(--boundary-biome-width);
     stroke-dasharray: var(--boundary-biome-dash);
+}
+
+.hexmap-container .lines path[data-type="rumor"] {
+    stroke: var(--boundary-rumor-color);
+    stroke-width: var(--boundary-rumor-width);
+    stroke-dasharray: var(--boundary-rumor-dash);
+    stroke-linecap: round; /* turns the tiny dashes into round dots */
 }
 
 /* Use the "ends with" selector to set default styles.
@@ -340,8 +352,15 @@
     stroke: var(--boundary-color, var(--boundary-biome-highlight-color, #2B7DE9));
 }
 
-/* --- Biomes in the legend --- */
-.legend-biome-group {
+/* Rumors are highlighted in their own colour (bigger dots) */
+.hexmap-container .lines path[data-type="rumor"].boundary-highlight {
+    stroke: var(--boundary-rumor-highlight-color, #FFD93D);
+}
+
+/* --- Biomes and Rumors in the legend --- */
+.legend-region-group,
+.legend-biome-group,
+.legend-rumor-group {
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid #817B58;
@@ -354,16 +373,17 @@
     letter-spacing: 0.05em;
     color: #666;
 }
-.legend-biome {
+.legend-biome,
+.legend-rumor {
     margin: 0 0 6px 0;
     padding: 4px 6px;
     font-size: 16px;
-    font-weight: bold;
     cursor: pointer;
     border-radius: 3px;
     transition: background-color 0.2s ease-in-out;
 }
-.legend-biome:hover {
+.legend-biome:hover,
+.legend-rumor:hover {
     background-color: #e0e0e0;
 }
 /* Small dashed swatch in the biome boundary colour */
@@ -374,6 +394,22 @@
     margin-right: 8px;
     vertical-align: middle;
     border-top: 3px dashed var(--boundary-color, var(--boundary-biome-color, #2E8B57));
+}
+
+/* Small swatch for rumors: white dots on a map-coloured background (white alone would be
+   invisible on the white legend) */
+.legend-rumor::before {
+    content: "";
+    display: inline-block;
+    width: 22px;
+    height: 8px;
+    margin-right: 8px;
+    vertical-align: middle;
+    border-radius: 2px;
+    background-color: #A29164;
+    background-image: radial-gradient(circle, var(--boundary-rumor-color, #FFFFFF) 1.5px, transparent 2px);
+    background-size: 7px 8px;
+    background-repeat: repeat-x;
 }
 
 /* --- START: New Stylable Hex State Icon Styles --- */

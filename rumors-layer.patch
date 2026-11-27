@@ -1,0 +1,268 @@
+diff --git a/themes/wildsea/assets/css/map.css b/themes/wildsea/assets/css/map.css
+index 65d9f84..8195e69 100644
+--- a/themes/wildsea/assets/css/map.css
++++ b/themes/wildsea/assets/css/map.css
+@@ -286,10 +286,10 @@
+     fill: none;
+ }
+ 
+-/* Boundary types (set by "type" in the hexjson boundaries).
+-   Regions are drawn first, biomes on top. On an edge shared by both, the dashed
+-   biome line lets the region line show through the gaps.
+-   Tweak the colours / widths / dash pattern here. */
++/* Boundary types (set by "type" in the hexjson boundaries: "region", "biome" or "rumor").
++   Regions are drawn first, then biomes, then rumors on top. On an edge shared by several
++   layers, the dashed / dotted lines let the ones below show through the gaps.
++   Tweak the colours / widths / dash patterns here. */
+ .hexmap-wrapper,
+ .hexmap-container {
+     --boundary-region-color: #333;
+@@ -299,6 +299,11 @@
+     --boundary-biome-dash: 8, 6;
+     --boundary-region-highlight-color: #D9534F; /* red */
+     --boundary-biome-highlight-color: #2B7DE9;  /* blue */
++    /* Rumors: white dotted line (round dots: dash length ~0, spacing = second value) */
++    --boundary-rumor-color: #FFFFFF;
++    --boundary-rumor-width: 3px;
++    --boundary-rumor-dash: 0.1, 7;
++    --boundary-rumor-highlight-color: #FFD93D;  /* yellow */
+ }
+ 
+ .hexmap-container .lines path[data-type="region"] {
+@@ -313,6 +318,13 @@
+     stroke-dasharray: var(--boundary-biome-dash);
+ }
+ 
++.hexmap-container .lines path[data-type="rumor"] {
++    stroke: var(--boundary-rumor-color);
++    stroke-width: var(--boundary-rumor-width);
++    stroke-dasharray: var(--boundary-rumor-dash);
++    stroke-linecap: round; /* turns the tiny dashes into round dots */
++}
++
+ /* Use the "ends with" selector to set default styles.
+   This makes "Abundance_Dashed" dashed.
+ */
+@@ -340,8 +352,14 @@
+     stroke: var(--boundary-color, var(--boundary-biome-highlight-color, #2B7DE9));
+ }
+ 
+-/* --- Biomes in the legend --- */
+-.legend-biome-group {
++/* Rumors are highlighted in their own colour (bigger dots) */
++.hexmap-container .lines path[data-type="rumor"].boundary-highlight {
++    stroke: var(--boundary-rumor-highlight-color, #FFD93D);
++}
++
++/* --- Biomes and Rumors in the legend --- */
++.legend-biome-group,
++.legend-rumor-group {
+     margin-top: 10px;
+     padding-top: 10px;
+     border-top: 1px solid #817B58;
+@@ -354,7 +372,8 @@
+     letter-spacing: 0.05em;
+     color: #666;
+ }
+-.legend-biome {
++.legend-biome,
++.legend-rumor {
+     margin: 0 0 6px 0;
+     padding: 4px 6px;
+     font-size: 16px;
+@@ -363,7 +382,8 @@
+     border-radius: 3px;
+     transition: background-color 0.2s ease-in-out;
+ }
+-.legend-biome:hover {
++.legend-biome:hover,
++.legend-rumor:hover {
+     background-color: #e0e0e0;
+ }
+ /* Small dashed swatch in the biome boundary colour */
+@@ -376,6 +396,22 @@
+     border-top: 3px dashed var(--boundary-color, var(--boundary-biome-color, #2E8B57));
+ }
+ 
++/* Small swatch for rumors: white dots on a map-coloured background (white alone would be
++   invisible on the white legend) */
++.legend-rumor::before {
++    content: "";
++    display: inline-block;
++    width: 22px;
++    height: 8px;
++    margin-right: 8px;
++    vertical-align: middle;
++    border-radius: 2px;
++    background-color: #A29164;
++    background-image: radial-gradient(circle, var(--boundary-rumor-color, #FFFFFF) 1.5px, transparent 2px);
++    background-size: 7px 8px;
++    background-repeat: repeat-x;
++}
++
+ /* --- START: New Stylable Hex State Icon Styles --- */
+ .icon-non-explored, .icon-non-cartographized {
+     filter: grayscale(100%);
+diff --git a/themes/wildsea/assets/js/hexmap-loader.js b/themes/wildsea/assets/js/hexmap-loader.js
+index d18f8ec..fe52fbb 100644
+--- a/themes/wildsea/assets/js/hexmap-loader.js
++++ b/themes/wildsea/assets/js/hexmap-loader.js
+@@ -147,18 +147,20 @@ async function initializeHexmap(config) {
+                         }
+                     });
+ 
+-                    // Biomes only have a name: show/hide them according to the search term
+-                    let visibleBiomes = 0;
+-                    legendEl.querySelectorAll('.legend-biome').forEach(biome => {
+-                        if (biome.textContent.toLowerCase().includes(searchTerm)) {
+-                            biome.classList.remove('hidden');
+-                            visibleBiomes++;
+-                        } else {
+-                            biome.classList.add('hidden');
+-                        }
++                    // Biomes and rumors only have a name: show/hide them according to the search term
++                    [['.legend-biome', '.legend-biome-group'], ['.legend-rumor', '.legend-rumor-group']].forEach(([itemSel, groupSel]) => {
++                        let visibleNames = 0;
++                        legendEl.querySelectorAll(itemSel).forEach(entry => {
++                            if (entry.textContent.toLowerCase().includes(searchTerm)) {
++                                entry.classList.remove('hidden');
++                                visibleNames++;
++                            } else {
++                                entry.classList.add('hidden');
++                            }
++                        });
++                        const group = legendEl.querySelector(groupSel);
++                        if (group) group.classList.toggle('hidden', !!searchTerm && visibleNames === 0);
+                     });
+-                    const biomeGroup = legendEl.querySelector('.legend-biome-group');
+-                    if (biomeGroup) biomeGroup.classList.toggle('hidden', !!searchTerm && visibleBiomes === 0);
+                 });
+ 
+                 // --- Legend Hover (POI) ---
+@@ -171,10 +173,16 @@ async function initializeHexmap(config) {
+                     }
+                 });
+ 
+-                // Boundaries are layered: regions first, then other types (biomes) on top.
++                // Boundaries are layered: regions first, then biomes, then rumors on top.
+                 // Highlighting moves a path to the front, so put the layers back in order afterwards.
++                const layerRank = { region: 0, biome: 1 };   // any other type (e.g. rumor) is drawn last
++                // Remember the order in which the paths were drawn so it can be restored exactly
++                const drawOrder = new Map(Array.from(hexmap.el.querySelectorAll('.lines path')).map((path, i) => [path, i]));
+                 const restoreBoundaryOrder = () => {
+-                    hexmap.el.querySelectorAll('.lines path:not([data-type="region"])').forEach(p => p.parentNode.appendChild(p));
++                    Array.from(hexmap.el.querySelectorAll('.lines path'))
++                        .map(path => ({ path, i: drawOrder.get(path) ?? 0, rank: layerRank[path.getAttribute('data-type')] ?? 2 }))
++                        .sort((a, b) => (a.rank - b.rank) || (a.i - b.i))
++                        .forEach(o => o.path.parentNode.appendChild(o.path));
+                 };
+ 
+                 // --- Legend Hover (Region) ---
+@@ -214,31 +222,35 @@ async function initializeHexmap(config) {
+                     }
+                 });
+ 
+-                // --- Legend Hover (Biome) ---
+-                legendEl.querySelectorAll('.legend-biome[data-biome-id]').forEach(item => {
+-                    const biomeId = item.getAttribute('data-biome-id');
++                // --- Legend Hover (name-only layers: Biomes and Rumors) ---
++                const setupLayerHover = (itemSelector, idAttr, type) => {
++                    legendEl.querySelectorAll(itemSelector).forEach(item => {
++                        const layerId = item.getAttribute(idAttr);
+ 
+-                    // Paths are looked up on hover so they are always the current ones.
+-                    // A biome "Forest" also matches variants such as "Forest_Dashed".
+-                    const getBiomePaths = () => Array.from(hexmap.el.querySelectorAll('.lines path[data-type="biome"]')).filter(path => {
+-                        const name = path.getAttribute('data-name') || '';
+-                        return name === biomeId || name.indexOf(biomeId + '_') === 0;
+-                    });
++                        // Paths are looked up on hover so they are always the current ones.
++                        // A boundary "Forest" also matches variants such as "Forest_Dashed".
++                        const getPaths = () => Array.from(hexmap.el.querySelectorAll(`.lines path[data-type="${type}"]`)).filter(path => {
++                            const name = path.getAttribute('data-name') || '';
++                            return name === layerId || name.indexOf(layerId + '_') === 0;
++                        });
+ 
+-                    item.addEventListener('mouseover', () => {
+-                        document.querySelectorAll(".map-label").forEach(x => x.classList.add("image-hidden"));
+-                        getBiomePaths().forEach(path => {
+-                            path.parentNode.appendChild(path); // Bring to front
+-                            path.classList.add('boundary-highlight');
++                        item.addEventListener('mouseover', () => {
++                            document.querySelectorAll(".map-label").forEach(x => x.classList.add("image-hidden"));
++                            getPaths().forEach(path => {
++                                path.parentNode.appendChild(path); // Bring to front
++                                path.classList.add('boundary-highlight');
++                            });
+                         });
+-                    });
+ 
+-                    item.addEventListener('mouseout', () => {
+-                        document.querySelectorAll(".map-label").forEach(x => x.classList.remove("image-hidden"));
+-                        getBiomePaths().forEach(path => path.classList.remove('boundary-highlight'));
+-                        restoreBoundaryOrder();
++                        item.addEventListener('mouseout', () => {
++                            document.querySelectorAll(".map-label").forEach(x => x.classList.remove("image-hidden"));
++                            getPaths().forEach(path => path.classList.remove('boundary-highlight'));
++                            restoreBoundaryOrder();
++                        });
+                     });
+-                });
++                };
++                setupLayerHover('.legend-biome[data-biome-id]', 'data-biome-id', 'biome');
++                setupLayerHover('.legend-rumor[data-rumor-id]', 'data-rumor-id', 'rumor');
+             }
+         } // end ready function
+     }; // end mapConfig
+diff --git a/themes/wildsea/assets/js/oi.hexmap.js b/themes/wildsea/assets/js/oi.hexmap.js
+index 00faf6c..320c248 100644
+--- a/themes/wildsea/assets/js/oi.hexmap.js
++++ b/themes/wildsea/assets/js/oi.hexmap.js
+@@ -678,10 +678,11 @@
+ 			return out;
+ 		}
+ 
+-		// Boundaries are drawn in layers: regions first, then any other type (e.g. "biome") on top,
++		// Boundaries are drawn in layers: regions first, then biomes, then rumors on top,
+ 		// so that when two boundaries share an edge, both stay visible.
+ 		function boundaryRank(b){
+-			return (!b || !b.type || b.type === "region") ? 0 : 1;
++			if(!b || !b.type || b.type === "region") return 0;
++			return (b.type === "biome") ? 1 : 2;
+ 		}
+ 
+ 		this.drawBoundaries = function(){
+diff --git a/themes/wildsea/layouts/_partials/hexmap-legend.html b/themes/wildsea/layouts/_partials/hexmap-legend.html
+index 21bf6f0..de3dec8 100644
+--- a/themes/wildsea/layouts/_partials/hexmap-legend.html
++++ b/themes/wildsea/layouts/_partials/hexmap-legend.html
+@@ -34,6 +34,14 @@
+     {{ end }}
+ {{ end }}
+ 
++{{/* --- 2c. Find all rumors (boundaries of type "rumor") --- */}}
++{{ $rumors := slice }}
++{{ range $name, $boundary := $.data.boundaries }}
++    {{ if eq ($boundary.type | default "region") "rumor" }}
++        {{ $rumors = $rumors | append $name }}
++    {{ end }}
++{{ end }}
++
+ {{/* --- 3. Build the Legend HTML --- */}}
+ <div class="legend-container">
+     <input type="text" class="legend-filter" placeholder="Filter locations...">
+@@ -129,4 +137,13 @@
+             {{ end }}
+         </div>
+     {{ end }}
++    {{/* --- 7. Rumors: name only (no expandable content), highlighted on hover --- */}}
++    {{ if gt (len $rumors) 0 }}
++        <div class="legend-rumor-group">
++            <h3 class="legend-group-title">Rumors</h3>
++            {{ range $rumors }}
++                <div class="legend-rumor" data-rumor-id="{{ . }}">{{ . }}</div>
++            {{ end }}
++        </div>
++    {{ end }}
+ </div>
+\ No newline at end of file
