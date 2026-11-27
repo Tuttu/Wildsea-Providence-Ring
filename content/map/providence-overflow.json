@@ -28,5 +28,11 @@
 		"hex": "WreckProvidenceNorth",
 		"width": 31,
 		"height": 25
+	},
+	{
+		"src": "pictures/Skull-Red.svg",
+		"hex": "RedfeatherStrigiaAttack",
+		"width": 30,
+		"height": 24
 	}
 ]
